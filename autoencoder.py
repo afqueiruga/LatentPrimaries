@@ -13,7 +13,11 @@ class Autoencoder(object):
         self.size_x = size_x
         self.size_q = size_q
         self.dtype = tf.float32
+        # Storage for my variables
+        self.vars = {}
         # Make the trainer
+        self.data = data
+        self.goal = self.make_goal(data)
         self.train_step = self._make_train_step(data)
         # Make evaluating graphs
         self.i_x = tf.placeholder( shape=(None,size_x,), dtype=tf.float32 )
@@ -30,21 +34,38 @@ class Autoencoder(object):
         W = self._var( (self.size_x, self.size_q) )
         b = self._var( (self.size_x,) )
         return tf.matmul(W,q)+b
-    def goal(self, data):
+    def make_goal(self, data):
         pred = self.decode(self.encode(data))
         p = tf.reduce_sum(tf.pow( data - pred, 2) ) 
         return p
     
     def _make_train_step(self, data):
-        ts = tf.train.AdamOptimizer(1e-2).minimize(self.goal(data))
+        ts = tf.train.AdamOptimizer(1e-2).minimize(self.make_goal(data))
         return ts
     def eval_q(self, i_x):
         return sess.eval( self.o_q, feed_dict={self.i_x:i_x} )
 
-    def _var(self, shape, stddev=0.1):
-        return tf.Variable(tf.truncated_normal(shape=shape, stddev=stddev),
+    def _var(self, name, shape, stddev=0.1):
+        try:
+            v = self.vars[name]
+        except KeyError:
+            v = tf.Variable(tf.truncated_normal(shape=shape, stddev=stddev),
                                dtype=self.dtype)
+            self.vars[name] = v
+        return v
     
+    def plot_distance(self, idxs=[0,1]):
+        from matplotlib import pylab as plt
+        XI,YI = idxs
+        inputs = self.data.eval()
+        q_enc = self.o_q.eval(feed_dict={self.i_x:inputs})
+        x_dec = self.o_x.eval(feed_dict={self.i_q:q_enc})
+        plt.plot( inputs[:,XI], inputs[:,YI],',')
+        for a,b in zip(inputs,x_dec)[::10]:
+            plt.plot( [a[XI],b[XI]], [a[YI],b[YI]],'-k')
+        plt.plot(x_dec[:,XI],x_dec[:,YI],'+')
+        plt.axis('square');
+        
 class PolyAutoencoder(Autoencoder):
     """
     The basic implementation.
@@ -55,13 +76,13 @@ class PolyAutoencoder(Autoencoder):
         Autoencoder.__init__(self,size_x, size_q, data)
     def encode(self, x):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
-        We1 = self._var( (N_coeff, self.size_q) )
-        be1 = self._var( (self.size_q,) )
+        We1 = self._var("enc:W", (N_coeff, self.size_q) )
+        be1 = self._var("enc:b", (self.size_q,) )
         return tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
     def decode(self, q):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
-        We1 = self._var( (N_coeff, self.size_x) )
-        be1 = self._var( (self.size_x,) )
+        We1 = self._var("dec:W", (N_coeff, self.size_x) )
+        be1 = self._var("dec:b", (self.size_x,) )
         return tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
     
 class ClassifyingPolyAutoencoder(Autoencoder):
