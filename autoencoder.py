@@ -3,6 +3,10 @@ import tensorflow as tf
 import afqstensorutils as atu
 from matplotlib import pylab as plt
 
+def mygrad(y, x):
+    yl = tf.unstack(y)
+    gl = [ tf.gradients(_,x) for _ in yl ]
+    return tf.stack(gl)
 class Autoencoder(object):
     """
     A class for generating autoencoders.
@@ -24,6 +28,7 @@ class Autoencoder(object):
         self.o_q = self.encode( self.i_x )
         self.i_q = tf.placeholder( shape=(None,size_q,), dtype=tf.float32 )
         self.o_x = self.decode( self.i_q )
+        self.o_grad_x = tf.gradients(self.o_x, self.i_q)[0]
         # Make the loggers for tensorboard
         
     def encode(self, x):
@@ -38,7 +43,7 @@ class Autoencoder(object):
         pred = self.decode(self.encode(data))
         p = tf.reduce_sum(tf.pow( data - pred, 2) ) 
         return p
-    
+
     def _make_train_step(self, data):
         ts = tf.train.AdamOptimizer(1e-2).minimize(self.make_goal(data))
         return ts
