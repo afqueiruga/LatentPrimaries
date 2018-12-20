@@ -7,6 +7,7 @@ def mygrad(y, x):
     yl = tf.unstack(y)
     gl = [ tf.gradients(_,x) for _ in yl ]
     return tf.stack(gl)
+
 class Autoencoder(object):
     """
     A class for generating autoencoders.
@@ -32,12 +33,12 @@ class Autoencoder(object):
         # Make the loggers for tensorboard
         
     def encode(self, x):
-        W = self._var( (self.size_q, self.size_x) )
-        b = self._var( (self.size_q,) )
+        W = self._var( "enc:W", (self.size_q, self.size_x) )
+        b = self._var( "enc:b", (self.size_q,) )
         return tf.matmul(W,x)+b
     def decode(self, q):
-        W = self._var( (self.size_x, self.size_q) )
-        b = self._var( (self.size_x,) )
+        W = self._var( "dec:W", (self.size_x, self.size_q) )
+        b = self._var( "dec:b", (self.size_x,) )
         return tf.matmul(W,q)+b
     def make_goal(self, data):
         pred = self.decode(self.encode(data))
@@ -96,7 +97,29 @@ class ClassifyingPolyAutoencoder(Autoencoder):
 
     The idea is that this one learns piecewise branching logic.
     """
-    def __init__(self, size_x, size_q, p_enc, p_dec):
+    def __init__(self, size_x, size_q, p_enc, N_branch, p_branch, p_dec):
         self.Np_enc = Np_enc
+        self.Nbranch_dec = N_branch
+        self.Np_branch = p_branch
         self.Np_dec = Np_dec
+        Autoencoder.__init__(self,size_x, size_q, data)
+    def encode(self, x):
+        N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
+        W = self._var("enc:W", (N_coeff, self.size_q) )
+        b = self._var("enc:b", (self.size_q,) )
+        return tf.matmul( atu.polyexpand(x, self.Np_enc), W ) + b
+    def decode(self, q):
+        qpoly = atu.polyexpand(q, self.Np_dec)
+        N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
 
+        
+        W1 = self._var("dec:W1", (N_coeff, self.size_q*self.Np_branch) )
+        b1 = self._var("dec:b1", (self.size_q*self.Np_branch,) )
+
+        hd = tf.relu(tf.matmul(qpoly,W1)+b1)
+        
+        W2 = self._var("dec:W2", (N_coeff, self.size_x) )
+        b2 = self._var("dec:b2", (self.size_x,) )
+
+        return tf.matmul( ___ ,W2)
+    
