@@ -29,7 +29,7 @@ class Autoencoder(object):
         self.o_q = self.encode( self.i_x )
         self.i_q = tf.placeholder( shape=(None,size_q,), dtype=tf.float32 )
         self.o_x = self.decode( self.i_q )
-        self.o_grad_x = tf.gradients(self.o_x, self.i_q)[0]
+        self.o_grad_x = atu.vector_gradient(self.o_x, self.i_q)
         # Make the loggers for tensorboard
         
     def encode(self, x):
@@ -189,16 +189,23 @@ class ClassifyingPolyAutoencoder(Autoencoder):
     
     def save_fit(self, fname, header):
         qs = []
+        ixs = []
         for j in range(20):
-            qs.append(self.o_q.eval(feed_dict={self.i_x:self.data.eval()}))
+            ix = self.data.eval()
+            qs.append(self.o_q.eval(feed_dict={self.i_x:ix}))
+            ixs.append(ix)
         qs = np.vstack(qs)
-        xs = self.o_x.eval(feed_dict={self.i_q:qs})
+        ixs = np.vstack(ixs)
+        oxs = self.o_x.eval(feed_dict={self.i_q:qs})
+        
         probs = self.o_class.eval(feed_dict={self.i_q:qs})
         classes = probs.argmax(axis=-1)
         
-        from matplotlib import pylab as plt
-        plt.plot(xs[:,0],xs[:,1],',')
+        errors = ((ixs-oxs)**2).sum(axis=-1)
         
-        dat = np.hstack([xs,qs,classes.reshape((-1,1))])
-        extra_header = ", "+", ".join(["q{0}".format(i) for i in range(self.size_q)]) + ", class"
+        from matplotlib import pylab as plt
+        plt.plot(oxs[:,0],oxs[:,1],',')
+        
+        dat = np.hstack([oxs,qs,classes.reshape((-1,1)), errors.reshape(-1,1)])
+        extra_header = ", "+", ".join(["q{0}".format(i) for i in range(self.size_q)]) + ", class, error"
         np.savetxt(fname,dat,delimiter=", ",header=header+extra_header,comments="")
