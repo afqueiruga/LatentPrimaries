@@ -12,7 +12,7 @@ class MyHook(tf.train.SessionRunHook):
         self.call_cnt += 1
 #         from IPython import embed ; embed()
         if self.call_cnt % self.save_freq == self.save_freq-1:
-            self.A.save_fit(self.fname+"_"+str(self.onum)+".vtk",
+            self.A.save_fit(self.fname+"_"+str(self.onum)+".csv",
                             "T, p, rho, h",sess=run_context.session)
             self.onum += 1
             print("Saving ",self.onum,".")
@@ -45,8 +45,6 @@ def my_input_fn():
 def my_model_fn(features, labels, mode, params):
     # params is for me
     
-    # make the data
-    
     # make the model
     au = ClassifyingPolyAutoencoder(4,2, features, 1,2, 6,12)
     # Return an estimatorspec
@@ -74,10 +72,10 @@ def main(argv):
     # train it
     network.train(
         input_fn=my_input_fn,
-        steps=1000)
+        steps=5000)
     # check its accuracy
-    score = network.evaluate(
-        input_fn=my_input_fn)
+#     score = network.evaluate(
+#         input_fn=my_input_fn)
     # use it to make predictions
     # I'm going to optimize and save it instead
     
