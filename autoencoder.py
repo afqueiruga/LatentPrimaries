@@ -26,9 +26,9 @@ class Autoencoder(object):
         self.train_step = self._make_train_step(data)
         # Make evaluating graphs
         self.i_x = tf.placeholder(name='i_x', shape=(None,size_x,), dtype=tf.float32 )
-        self.o_q = self.encode( self.i_x )
+        self.o_q = self.encode( self.i_x, name='encode' )
         self.i_q = tf.placeholder(name='i_q', shape=(None,size_q,), dtype=tf.float32 )
-        self.o_x = self.decode( self.i_q )
+        self.o_x = self.decode( self.i_q, name='decode' )
         self.o_grad_x = atu.vector_gradient(self.o_x, self.i_q)
         # Make the loggers for tensorboard
         
