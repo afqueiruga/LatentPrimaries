@@ -16,6 +16,9 @@ class MyHook(tf.train.SessionRunHook):
                             "T, p, rho, h",sess=run_context.session)
             self.onum += 1
             print("Saving ",self.onum,".")
+    def end(self, run_context):
+        saver = tf.train.Saver()
+        saver.save(run_context,"./savemymodel")
 
 # I need to generate an estimator for an autoencoder
 # The autoencoder architecture should be an input
@@ -54,15 +57,22 @@ def my_model_fn(features, labels, mode, params):
     loss = au.goal
     # For training:
     train_op = au.train_step
+    meta_graph_def = tf.train.export_meta_graph(filename="savemymodel.meta")
+
     return tf.estimator.EstimatorSpec(
         mode=mode,
         predictions=predictions,
         loss=loss,
         train_op=train_op,
+        export_outputs={'x',au.o_x},
         training_hooks=[MyHook(au,"auto_a/viz")])
 
 # use tf.estimator.train_and_evaluate to batch experiments
 
+class GlobHook(tf.train.SessionRunHook):
+    def end(self, session_context):
+        print("dawg")
+        from IPython import embed ; embed()
 def main(argv):
     # construct the estimator
     network = tf.estimator.Estimator(
@@ -72,7 +82,9 @@ def main(argv):
     # train it
     network.train(
         input_fn=my_input_fn,
-        steps=5000)
+        steps=100)
+#     network.
+#     hooks=[GlobHook()])
     # check its accuracy
 #     score = network.evaluate(
 #         input_fn=my_input_fn)
