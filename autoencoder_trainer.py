@@ -30,7 +30,8 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper):
         with session as sess:
 #             sess.run(init)
             onum = 0
-            while not sess.should_stop():
+#             while not sess.should_stop():
+            for i in range(n_epoch):
                 sess.run(ae.train_step)
                 if global_step.eval(session=sess)%(n_epoch/10)==(n_epoch/10)-1:
                     print(ae.goal.eval(session=sess))
