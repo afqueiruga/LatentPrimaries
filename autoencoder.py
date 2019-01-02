@@ -50,7 +50,7 @@ class Autoencoder(object):
     def _make_train_step(self, data):
         opt = tf.train.AdamOptimizer(1e-2)
         loss = self.make_goal(data)
-        ts = opt.minimize(loss,global_step=tf.train.get_global_step())
+        ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step())
         return ts
     
     def eval_q(self, i_x):
