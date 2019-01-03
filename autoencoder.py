@@ -198,9 +198,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         
         h_select = self.classify(q)
         
-        x = tf.einsum('ijk,ij->ik',h_curve,h_select, name=name)
-        
-        return x
+        x = tf.einsum('ijk,ij->ik',h_curve,h_select)
+        return tf.identity(x,name=name)
     
     def save_fit(self, fname, header,sess=None):
         qs = []

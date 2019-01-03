@@ -69,8 +69,9 @@ if __name__=="__main__":
     )
     sets_to_try = [
         #{'type':'Classifying','args':[1,1, 6,12,'tanh']},
-        #{'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
-        {'type':'Classifying','args':[1,1, 6,12,'relu']}
+#         {'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
+        {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
+#         {'type':'Classifying','args':[1,1, 6,12,'relu']}
 
     ]
     for S in sets_to_try:
