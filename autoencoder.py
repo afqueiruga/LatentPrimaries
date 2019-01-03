@@ -149,12 +149,19 @@ class ClassifyingPolyAutoencoder(Autoencoder):
                   `-> W2->relu->softmax -^ (phase)
     
     """
-    def __init__(self, size_x, size_q, data, p_enc, p_dec, N_curve, N_bound, softmax_it=True):
+    activations={
+        'tanh':tf.tanh,
+        'sigmoid':tf.sigmoid,
+        'relu':tf.nn.relu
+    }
+    def __init__(self, size_x, size_q, data, p_enc, p_dec, N_curve, N_bound,
+                 boundary_activation='tanh',softmax_it=True):
         self.Np_enc = p_enc
         self.Np_dec = p_dec
 
         self.N_curve = N_curve
         self.N_bound = N_bound
+        self.boundary_activation = boundary_activation
         self.softmax_it = softmax_it
         Autoencoder.__init__(self,size_x, size_q, data)
         self.o_class = self.classify(self.i_q)
@@ -171,7 +178,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
 
         W2 = self._var("dec_W_bound", (N_coeff, self.N_bound) )
         b2 = self._var("dec_b_bound", (self.N_bound,) )
-        h_bound = tf.nn.relu(tf.tensordot(qpoly,W2,axes=[-1,0])+b2)
+        act = self.activations[self.boundary_activation]
+        h_bound = act(tf.tensordot(qpoly,W2,axes=[-1,0])+b2)
         
         W_select = self._var("dec_W_select", (self.N_bound,self.N_curve))
         h_select = tf.tensordot(h_bound,W_select, axes=[-1,0],
