@@ -58,7 +58,6 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper):
                     ae.save_fit(training_dir+"/surf_{0}.csv".format(onum),
                                 header,sess=sess)
                 sess.run(ae.train_step)
-    # Write the graph
     
     
 if __name__=="__main__":
@@ -70,9 +69,9 @@ if __name__=="__main__":
     sets_to_try = [
         #{'type':'Classifying','args':[1,1, 6,12,'tanh']},
 #         {'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
-        {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
+#         {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
 #         {'type':'Classifying','args':[1,1, 6,12,'relu']}
-
+        {'type':'Deep','args':[1,[],1,[8,8,8]]},
     ]
     for S in sets_to_try:
         train_autoencoder("water",dataset, 4,2,S)

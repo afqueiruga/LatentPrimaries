@@ -81,7 +81,8 @@ class Autoencoder(object):
     def save_fit(self, fname, header,sess=None):
         qs = []
         for j in range(20):
-            qs.append(self.o_q.eval(feed_dict={self.i_x:self.data.eval()}))
+            qs.append(self.o_q.eval(session=sess,
+                                    feed_dict={self.i_x:self.data.eval(session=sess)}))
         qs = np.vstack(qs)
         if sess:
             xs = sess.run(self.o_x,feed_dict={self.i_q:qs})
@@ -126,18 +127,25 @@ class DeepPolyAutoencoder(Autoencoder):
         self.dec_layers = dec_layers
         Autoencoder.__init__(self,size_x, size_q, data)
         
+    def _layers(self, inp, sizes, prefix=""):
+        nxt = inp
+        for i,hidden_size in enumerate(sizes):
+            We1 = self._var(prefix+"_W"+str(i), (int(nxt.shape[-1]), hidden_size) )
+            be1 = self._var(prefix+"_b"+str(i), (hidden_size,) )
+            nxt = tf.nn.relu(tf.matmul( nxt, We1 ) + be1)
+        return nxt
+    
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
-        for hidden_size in enc_layers + [self.size_q]:
-            We1 = self._var("enc_W", (N_coeff, self.size_q) )
-            be1 = self._var("enc_b", (self.size_q,) )
-        return tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
+        nxt = atu.polyexpand(x, self.Np_enc)
+        nxt = self._layers(nxt, self.enc_layers + [self.size_q], prefix="enc")
+        return tf.identity(nxt,name=name)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
-        We1 = self._var("dec_W", (N_coeff, self.size_x) )
-        be1 = self._var("dec_b", (self.size_x,) )
-        return tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
+        nxt = atu.polyexpand(q, self.Np_dec)
+        nxt = self._layers(nxt, self.dec_layers + [self.size_x], prefix="dec")
+        return tf.identity(nxt,name=name)
     
 class ClassifyingPolyAutoencoder(Autoencoder):
     """
