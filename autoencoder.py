@@ -132,7 +132,7 @@ class DeepPolyAutoencoder(Autoencoder):
         for i,hidden_size in enumerate(sizes):
             We1 = self._var(prefix+"_W"+str(i), (int(nxt.shape[-1]), hidden_size) )
             be1 = self._var(prefix+"_b"+str(i), (hidden_size,) )
-            nxt = tf.nn.relu(tf.matmul( nxt, We1 ) + be1)
+            nxt = tf.nn.leaky_relu(tf.matmul( nxt, We1 ) + be1)
         return nxt
     
     def encode(self, x, name=None):
