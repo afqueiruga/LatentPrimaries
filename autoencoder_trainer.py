@@ -34,15 +34,16 @@ class DoStuffHook(tf.train.SessionRunHook):
         self.func = func
         return self
     
-def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper):
+def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
+                     training_dir=''):
     autoclass = autoencoder_factory[hyper['type']]
     def sanitize(x):
         return str(x).replace(' ','').replace('[','(').replace(']',')')
     hyperpath = hyper['type']+'_'+','.join(map(sanitize,hyper['args']))
-    training_dir = "training_"+name+"/"+hyperpath
+    training_dir = training_dir+"/training_"+name+"/"+hyperpath
     # Set up the graph from the inputs
     n_epoch = 5000
-    image_freq = 1000
+    image_freq = 1500
 
     graph = tf.Graph()
     with graph.as_default():
@@ -59,9 +60,9 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper):
             summary_op=tf.summary.scalar("goal",ae.goal),
             save_steps=50,output_dir=training_dir)
         stophook = tf.train.StopAtStepHook(num_steps=n_epoch)
-        saverhook = SaveAtEndHook(training_dir+"/final_variables.ckpt")
+        saverhook = SaveAtEndHook(training_dir+"/final_variables")
         # Make a closure into a hook
-        @DoStuffHook(freq=500)
+        @DoStuffHook(freq=image_freq)
         def extrahook(ctx,run_values):
             stepnum = global_step.eval(session=ctx.session)
             onum_val = onum.eval(session=ctx.session)

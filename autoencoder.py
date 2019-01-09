@@ -3,11 +3,13 @@ import tensorflow as tf
 import afqstensorutils as atu
 from matplotlib import pylab as plt
 
-def mygrad(y, x):
-    yl = tf.unstack(y)
-    gl = [ tf.gradients(_,x) for _ in yl ]
-    return tf.stack(gl)
-
+def myev(x,feed_dict={},session=None):
+    "Sanitized for interactive session contexts"
+    if session:
+        return session.run(x,feed_dict=feed_dict)
+    else:
+        return x.eval(feed_dict=feed_dict)
+    
 class Autoencoder(object):
     """
     A class for generating autoencoders.
@@ -78,21 +80,35 @@ class Autoencoder(object):
         plt.plot(x_dec[:,XI],x_dec[:,YI],'+')
         plt.axis('square');
         
+    def _extra_saves(self, ixs,qs,session=None):
+        return "",[]
+    
     def save_fit(self, fname, header,sess=None):
         qs = []
+        ixs = []
+        
         for j in range(20):
-            qs.append(self.o_q.eval(session=sess,
-                                    feed_dict={self.i_x:self.data.eval(session=sess)}))
+            ix = myev(self.data,session=sess)
+            qs.append(myev(self.o_q,feed_dict={self.i_x:ix},session=sess))
+            ixs.append(ix)
         qs = np.vstack(qs)
-        if sess:
-            xs = sess.run(self.o_x,feed_dict={self.i_q:qs})
+        ixs = np.vstack(ixs)
+        oxs = myev(self.o_x,{self.i_q:qs},session=sess)
+        
+        extra_header,extra_saves = self._extra_saves(ixs,qs,session=sess)
+        
+        errors = ((ixs-oxs)**2).sum(axis=-1)
+        
+        from matplotlib import pylab as plt
+        plt.plot(oxs[:,0],oxs[:,1],',')
+        if extra_header:
+            dat = np.hstack([oxs,qs, errors.reshape(-1,1),extra_saves.reshape((-1,1))])
         else:
-            xs = self.o_x.eval(feed_dict={self.i_q:qs})
-#         from matplotlib import pylab as plt
-#         plt.plot(xs[:,0],xs[:,1],',')
-        dat = np.hstack([xs,qs])
-        np.savetxt(fname,dat,delimiter=", ",header=header,comments="")
-
+            dat = np.hstack([oxs,qs, errors.reshape(-1,1)])
+        auto_header = ","+",".join(["q{0}".format(i) for i in range(self.size_q)]) + ",error"
+        np.savetxt(fname,dat,delimiter=",",
+                   header=header+auto_header+extra_header,comments="")
+        
         
 class PolyAutoencoder(Autoencoder):
     """
@@ -115,10 +131,10 @@ class PolyAutoencoder(Autoencoder):
         be1 = self._var("dec_b", (self.size_x,) )
         return tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
     
+    
 class DeepPolyAutoencoder(Autoencoder):
     """
     The Deep relu'ed layers on each side
-    TODO
     """
     def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers):
         self.Np_enc = Np_enc
@@ -146,6 +162,7 @@ class DeepPolyAutoencoder(Autoencoder):
         nxt = atu.polyexpand(q, self.Np_dec)
         nxt = self._layers(nxt, self.dec_layers + [self.size_x], prefix="dec")
         return tf.identity(nxt,name=name)
+    
     
 class ClassifyingPolyAutoencoder(Autoencoder):
     """
@@ -208,29 +225,32 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         
         x = tf.einsum('ijk,ij->ik',h_curve,h_select)
         return tf.identity(x,name=name)
-    
-    def save_fit(self, fname, header,sess=None):
-        qs = []
-        ixs = []
-        def myev(x,feed_dict={}):
-            if sess:
-                return sess.run(x,feed_dict=feed_dict)
-            else:
-                return x.eval(feed_dict=feed_dict)
-        for j in range(20):
-            ix = myev(self.data)
-            qs.append(myev(self.o_q,feed_dict={self.i_x:ix}))
-            ixs.append(ix)
-        qs = np.vstack(qs)
-        ixs = np.vstack(ixs)
-        oxs = myev(self.o_x,{self.i_q:qs})
-        probs = myev(self.o_class,feed_dict={self.i_q:qs})
+    def _extra_saves(self, ixs,qs, session=None):
+        probs = myev(self.o_class,feed_dict={self.i_q:qs},session=session)
         classes = probs.argmax(axis=-1)
-        errors = ((ixs-oxs)**2).sum(axis=-1)
+        return ",classes",classes
+#     def save_fit(self, fname, header,sess=None):
+#         qs = []
+#         ixs = []
+#         def myev(x,feed_dict={}):
+#             if sess:
+#                 return sess.run(x,feed_dict=feed_dict)
+#             else:
+#                 return x.eval(feed_dict=feed_dict)
+#         for j in range(20):
+#             ix = myev(self.data)
+#             qs.append(myev(self.o_q,feed_dict={self.i_x:ix}))
+#             ixs.append(ix)
+#         qs = np.vstack(qs)
+#         ixs = np.vstack(ixs)
+#         oxs = myev(self.o_x,{self.i_q:qs})
+#         probs = myev(self.o_class,feed_dict={self.i_q:qs})
+#         classes = probs.argmax(axis=-1)
+#         errors = ((ixs-oxs)**2).sum(axis=-1)
         
-        from matplotlib import pylab as plt
-        plt.plot(oxs[:,0],oxs[:,1],',')
+#         from matplotlib import pylab as plt
+#         plt.plot(oxs[:,0],oxs[:,1],',')
         
-        dat = np.hstack([oxs,qs,classes.reshape((-1,1)), errors.reshape(-1,1)])
-        extra_header = ", "+", ".join(["q{0}".format(i) for i in range(self.size_q)]) + ", class, error"
-        np.savetxt(fname,dat,delimiter=", ",header=header+extra_header,comments="")
+#         dat = np.hstack([oxs,qs,classes.reshape((-1,1)), errors.reshape(-1,1)])
+#         extra_header = ", "+", ".join(["q{0}".format(i) for i in range(self.size_q)]) + ", class, error"
+#         np.savetxt(fname,dat,delimiter=", ",header=header+extra_header,comments="")
