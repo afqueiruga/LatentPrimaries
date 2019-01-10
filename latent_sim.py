@@ -13,7 +13,6 @@ class LatentSim():
         "Constructor"
         self._graph = None
         self._sess = None
-        self.dtype = np.float32 # TODO autoselect
         self._vars = {}
         
     def load_model(self, location, scale_file="", logp=True):
@@ -49,6 +48,8 @@ class LatentSim():
         
         self.o_dxdq = atu.vector_gradient(self.o_x, self.i_q)
         self.o_dsdq = atu.vector_gradient(self.o_s, self.i_q)
+        
+        self.dtype = self.i_x.dtype
 
     def decode(self, q):
         " Go from q to s"
@@ -129,7 +130,7 @@ class LatentSim():
         
     def regvar(self, name,val):
         """Register a variable into the system of equations."""
-        self._vars[name]=tf.Variable(val)
+        self._vars[name]=tf.Variable(val,dtype=self.dtype)
         return self._vars[name]
     
     def m_and_r(self, T,p,rho,h):

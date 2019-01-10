@@ -19,7 +19,7 @@ class Autoencoder(object):
     def __init__(self, size_x, size_q, data):
         self.size_x = size_x
         self.size_q = size_q
-        self.dtype = tf.float32 # TODO check from data
+        self.dtype = data.dtype #tf.float32 # TODO check from data
         # Storage for my variables
         self.vars = {}
         # Make the trainer
@@ -27,9 +27,9 @@ class Autoencoder(object):
         self.goal = self.make_goal(data)
         self.train_step = self._make_train_step(data)
         # Make evaluating graphs
-        self.i_x = tf.placeholder(name='i_x', shape=(None,size_x,), dtype=tf.float32 )
+        self.i_x = tf.placeholder(name='i_x', shape=(None,size_x,), dtype=self.dtype )
         self.o_q = self.encode( self.i_x, name='encode' )
-        self.i_q = tf.placeholder(name='i_q', shape=(None,size_q,), dtype=tf.float32 )
+        self.i_q = tf.placeholder(name='i_q', shape=(None,size_q,), dtype=self.dtype )
         self.o_x = self.decode( self.i_q, name='decode' )
         self.o_grad_x = atu.vector_gradient(self.o_x, self.i_q)
         # Make the loggers for tensorboard
@@ -63,9 +63,10 @@ class Autoencoder(object):
         try:
             v = self.vars[name]
         except KeyError:
-            v = tf.Variable(tf.truncated_normal(shape=shape, stddev=stddev),
-                            name=name,
-                            dtype=self.dtype)
+            v = tf.Variable(
+                  tf.truncated_normal(shape=shape, stddev=stddev,dtype=self.dtype),
+                  name=name,
+                  dtype=self.dtype)
             self.vars[name] = v
         return v
     
@@ -226,32 +227,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         
         x = tf.einsum('ijk,ij->ik',h_curve,h_select)
         return tf.identity(x,name=name)
+    
     def _extra_saves(self, ixs,qs, session=None):
         probs = myev(self.o_class,feed_dict={self.i_q:qs},session=session)
         classes = probs.argmax(axis=-1)
         return ",classes",classes
-#     def save_fit(self, fname, header,sess=None):
-#         qs = []
-#         ixs = []
-#         def myev(x,feed_dict={}):
-#             if sess:
-#                 return sess.run(x,feed_dict=feed_dict)
-#             else:
-#                 return x.eval(feed_dict=feed_dict)
-#         for j in range(20):
-#             ix = myev(self.data)
-#             qs.append(myev(self.o_q,feed_dict={self.i_x:ix}))
-#             ixs.append(ix)
-#         qs = np.vstack(qs)
-#         ixs = np.vstack(ixs)
-#         oxs = myev(self.o_x,{self.i_q:qs})
-#         probs = myev(self.o_class,feed_dict={self.i_q:qs})
-#         classes = probs.argmax(axis=-1)
-#         errors = ((ixs-oxs)**2).sum(axis=-1)
-        
-#         from matplotlib import pylab as plt
-#         plt.plot(oxs[:,0],oxs[:,1],',')
-        
-#         dat = np.hstack([oxs,qs,classes.reshape((-1,1)), errors.reshape(-1,1)])
-#         extra_header = ", "+", ".join(["q{0}".format(i) for i in range(self.size_q)]) + ", class, error"
-#         np.savetxt(fname,dat,delimiter=", ",header=header+extra_header,comments="")
