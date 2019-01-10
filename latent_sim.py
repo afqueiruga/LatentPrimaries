@@ -86,16 +86,19 @@ class LatentSim():
             idcs.append(3)
         q0 = self.encode(s0)
         idcs = np.array(idcs, dtype=np.intc)
-        for i in range(1000):
+        for i in range(50):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
-                
-#             print Kt
             R = Rt[0,idcs]-s0[0,idcs]
             K = Kt[0,idcs,:]
             Dq = np.linalg.solve(K,-R)
-            q0[:] += 0.1*Dq
-#             print np.linalg.norm(Dq), q0
+#             if Dq.isnan():
+#                 break
+            nDq = np.linalg.norm(Dq)
+            print nDq, q0, Dq
+            if np.isnan(Dq).any(): break
+            print  min(1.0,nDq)*Dq/nDq
+            q0[:] += min(1.0,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
                 break
         print "Found point at ", self.decode(q0), " after ",i," iterations."
