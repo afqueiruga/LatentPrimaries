@@ -72,6 +72,8 @@ class LatentSim():
         s0 = np.expand_dims(self.scale[0,:],axis=0).copy()
         if self.logp: s0[0,1] = np.exp(s0[0,1])
         idcs = []
+
+        q0 = self.encode(s0)
         if not T is None:
             s0[0,0] = T
             idcs.append(0)
@@ -84,9 +86,8 @@ class LatentSim():
         if not h is None:
             s0[0,3] = h
             idcs.append(3)
-        q0 = self.encode(s0)
         idcs = np.array(idcs, dtype=np.intc)
-        for i in range(50):
+        for i in range(200):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
             R = Rt[0,idcs]-s0[0,idcs]
@@ -95,10 +96,10 @@ class LatentSim():
 #             if Dq.isnan():
 #                 break
             nDq = np.linalg.norm(Dq)
-            print nDq, q0, Dq
+            print nDq, q0
             if np.isnan(Dq).any(): break
-            print  min(1.0,nDq)*Dq/nDq
-            q0[:] += min(1.0,nDq)*Dq/nDq
+#             print  min(1.0,nDq)*Dq/nDq
+            q0[:] += min(0.5,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
                 break
         print "Found point at ", self.decode(q0), " after ",i," iterations."
@@ -158,13 +159,16 @@ class LatentSim():
         """Solve one timestep. Note that LatentSim is stateless in this regard."""
         qi = q0.copy()
         rhs_0 = self._sess.run(self.rhs,feed_dict={self.i_q:q0})
-        for k in range(10):
+        for k in range(100):
             K_k,lhs_k = self._sess.run([self.K_lhs,self.lhs],feed_dict={self.i_q:qi})
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
-            qi[:] += Dq
-            n = np.linalg.norm(Dq)
-            if n<1.0e-7: break
+            nDq = np.linalg.norm(Dq)
+            step = min(0.001/nDq,1.0)*Dq
+            # TODO line search
+            qi[:] += step
+            if nDq<2.0e-7: break
+        print k, nDq
         return qi
     
     def initialize(self, s):
