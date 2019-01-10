@@ -148,7 +148,7 @@ class LatentSim():
     
     def set_params(self, **kwargs):
         """Set a value k = v in the current session."""
-        for k,v in kwargs:
+        for k,v in kwargs.items():
             self._vars[k].load(v,self._sess)
     
     def solve_a_time_step(self, q0):

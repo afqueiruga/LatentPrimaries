@@ -35,18 +35,17 @@ class DoStuffHook(tf.train.SessionRunHook):
         return self
     
 def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
-                     training_dir=''):
+                     training_dir='',n_epoch=5000):
     autoclass = autoencoder_factory[hyper['type']]
     def sanitize(x):
         return str(x).replace(' ','').replace('[','(').replace(']',')')
     hyperpath = hyper['type']+'_'+','.join(map(sanitize,hyper['args']))
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
-    # Set up the graph from the inputs
-    n_epoch = 5000
     image_freq = 1500
-
+    
     graph = tf.Graph()
     with graph.as_default():
+        # Set up the graph from the inputs
         stream = atu.make_datastream(dataset,batch_size=0,buffer_size=1000)
         stream = tf.transpose(stream)
         global_step = tf.train.get_or_create_global_step()

@@ -46,7 +46,8 @@ class Autoencoder(object):
     
     def make_goal(self, data):
         pred = self.decode(self.encode(data))
-        p = tf.reduce_sum(tf.pow( data - pred, 2) ) 
+#         p = tf.reduce_sum(tf.pow( data - pred, 2) ) 
+        p = tf.losses.mean_squared_error(data, pred)
         return p
 
     def _make_train_step(self, data):
