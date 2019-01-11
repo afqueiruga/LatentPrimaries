@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import afqstensorutils as atu
@@ -9,11 +10,13 @@ def shift(x,scale):
 
 class LatentSim():
     """Object for storing a simulation state"""
-    def __init__(self):
+    def __init__(self, model_loc,scale_file="", logp=True, method="BWEuler"):
         "Constructor"
         self._graph = None
         self._sess = None
         self._vars = {}
+        self.load_model(model_loc, scale_file,logp)
+        self.build_dae(method)
         
     def load_model(self, location, scale_file="", logp=True):
         """Read the autoencoder from a tensorflow file"""
@@ -103,7 +106,7 @@ class LatentSim():
             q0[:] += min(0.5,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
                 break
-        print "Found point at ", self.decode(q0), " after ",i," iterations."
+        print("Found point at ", self.decode(q0), " after ",i," iterations.")
         return q0
     
     def build_dae(self, method='BWEuler'):
@@ -176,17 +179,17 @@ class LatentSim():
         t = 0
         self.set_params(Dt=Dt)
         q = q0.copy()
-        timeseries = []
+        timeseries = [np.c_[t,q,self.decode(q)]]
         while t<t_max:
             t+=Dt
             schedule(self, t)
-            q,k,nDq = ls.solve_a_time_step(q)
+            q,k,nDq = self.solve_a_time_step(q)
             if np.isnan(q).any() or np.isinf(q).any():
-                print "NaN encountered at t=",t
+                print("NaN encountered at t=",t)
                 break
             if nDq > 2.0e-7:
-                print("Failed to converge at t=",t," quiting.")
+                print("Failed to converge at t=",t," |Dq| was ",nDq," after ",k," iterations; quiting.")
                 break
-            timeseries.append(np.c_[t,q,ls.decode(q)])
-        return timeseries
+            timeseries.append(np.c_[t,q,self.decode(q)])
+        return np.vstack(timeseries)
         
