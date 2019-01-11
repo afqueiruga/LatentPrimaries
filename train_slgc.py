@@ -19,11 +19,15 @@ if __name__=="__main__":
 #         {'type':'Classifying','args':[2,1, 6,12,'sigmoid']},
 #         {'type':'Classifying','args':[1,1, 12,24,'sigmoid']},
 #         {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
-        {'type':'Classifying','args':[2,1, 12,24,'sigmoid']},
-        {'type':'Classifying','args':[2,3, 12,24,'sigmoid']},
-        {'type':'Classifying','args':[2,5, 12,24,'sigmoid']},
+#         {'type':'Classifying','args':[2,1, 12,24,'sigmoid']},
+#         {'type':'Classifying','args':[2,3, 12,24,'sigmoid']},
+#         {'type':'Classifying','args':[2,5, 12,24,'sigmoid']},
+#         {'type':'Classifying','args':[2,6, 12,24,'sigmoid']},
+        {'type':'Classifying','args':[2,6, 18,36,'sigmoid']},
+        {'type':'Classifying','args':[2,6, 24,48,'sigmoid']},
     ]
     for S in sets_to_try:
         train_autoencoder("water_slgc_logp_64",dataset, 4,2,S,
                          training_dir=training_dir,
-                         n_epoch=5000)
+                         n_epoch=10000)
+        

@@ -97,7 +97,7 @@ class LatentSim():
 #             if Dq.isnan():
 #                 break
             nDq = np.linalg.norm(Dq)
-            print nDq, q0
+#             print nDq, q0
             if np.isnan(Dq).any(): break
 #             print  min(1.0,nDq)*Dq/nDq
             q0[:] += min(0.5,nDq)*Dq/nDq
@@ -160,7 +160,7 @@ class LatentSim():
         """Solve one timestep. Note that LatentSim is stateless in this regard."""
         qi = q0.copy()
         rhs_0 = self._sess.run(self.rhs,feed_dict={self.i_q:q0})
-        for k in range(100):
+        for k in range(500):
             K_k,lhs_k = self._sess.run([self.K_lhs,self.lhs],feed_dict={self.i_q:qi})
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
@@ -169,8 +169,24 @@ class LatentSim():
             # TODO line search
             qi[:] += step
             if nDq<2.0e-7: break
-        print k, nDq
-        return qi
+        return qi,k,nDq
     
-    def initialize(self, s):
-        pass
+    
+    def integrate(self,t_max, q0, Dt=0.1, schedule=lambda s,t :None):
+        t = 0
+        self.set_params(Dt=Dt)
+        q = q0.copy()
+        timeseries = []
+        while t<t_max:
+            t+=Dt
+            schedule(self, t)
+            q,k,nDq = ls.solve_a_time_step(q)
+            if np.isnan(q).any() or np.isinf(q).any():
+                print "NaN encountered at t=",t
+                break
+            if nDq > 2.0e-7:
+                print("Failed to converge at t=",t," quiting.")
+                break
+            timeseries.append(np.c_[t,q,ls.decode(q)])
+        return timeseries
+        
