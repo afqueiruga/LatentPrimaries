@@ -42,7 +42,8 @@ class Autoencoder(object):
     def decode(self, q, name=None):
         W = self._var( "dec_W", (self.size_x, self.size_q) )
         b = self._var( "dec_b", (self.size_x,) )
-        return tf.matmul(W,q)+b
+        x = tf.matmul(W,q)+b
+        return tf.identity(x,name=name)
     
     def make_goal(self, data):
         pred = self.decode(self.encode(data))
@@ -125,13 +126,15 @@ class PolyAutoencoder(Autoencoder):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
         We1 = self._var("enc_W", (N_coeff, self.size_q) )
         be1 = self._var("enc_b", (self.size_q,) )
-        return tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
+        q = tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
+        return tf.identity(q,name=name)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         We1 = self._var("dec_W", (N_coeff, self.size_x) )
         be1 = self._var("dec_b", (self.size_x,) )
-        return tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
+        x = tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
+        return tf.identity(x,name=name)
     
     
 class DeepPolyAutoencoder(Autoencoder):
