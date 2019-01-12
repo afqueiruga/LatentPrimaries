@@ -82,18 +82,27 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
     
     
 if __name__=="__main__":
+    training_dir = "/Users/afq/Google Drive/networks/"
+    data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
+    n_epoch = 15000
     dataset = tf.data.experimental.make_csv_dataset(
-        'sharded/*.csv',
-        1000,
-        select_columns=['T',' p',' rho',' h']
+        data_dir+'water_lg_sharded/*.csv',
+        5000,
+        select_columns=['T',' p',' rho',' h'],
+        column_defaults=[tf.float64,tf.float64,tf.float64,tf.float64]
     )
     sets_to_try = [
-        #{'type':'Classifying','args':[1,1, 6,12,'tanh']},
-#         {'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
-#         {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
-#         {'type':'Classifying','args':[1,1, 6,12,'relu']}
+        {'type':'Classifying','args':[1,1, 6,12,'tanh']},
+        {'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
+        {'type':'Classifying','args':[1,4, 6,12,'sigmoid']},
+        {'type':'Classifying','args':[1,5, 6,12,'sigmoid']},
+        {'type':'Classifying','args':[1,1, 6,12,'relu']},
         {'type':'Deep','args':[1,[],1,[8,8,8]]},
+        {'type':'Deep','args':[1,[],2,[8,8,8]]},
+        {'type':'Deep','args':[1,[],3,[8,8,8]]},
 #         {'type':'Poly','args':[1,7]},
     ]
     for S in sets_to_try:
-        train_autoencoder("water",dataset, 4,2,S)
+        train_autoencoder("water_lg",dataset, 4,2,S,
+                          training_dir=training_dir,
+                          n_epoch = n_epoch)
