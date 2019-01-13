@@ -3,18 +3,7 @@ import numpy as np
 import os
 from latent_sim import LatentSim
 
-hub = "/Users/afq/Google Drive/networks/training_water_slgc_logp_64/"
-scale_file = "data_files/water_iapw_logp_ranges.csv"
-logp=True
-
-
-# networks = ["Classifying_2,6,24,48,sigmoid",
-#             "Classifying_2,6,18,36,sigmoid",
-#             "Classifying_2,5,12,24,sigmoid",
-#            ]
-networks = os.listdir(hub)
-print(networks)
-problems = []
+from SimDataDB import SimDataDB
 
 class Small_Liquid():
     t_max = 1000.0
@@ -31,6 +20,15 @@ class Small_Gas():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=450,p_inf=5.0e3)
+
+class Hot_Gas():
+    t_max = 1000.0
+    initial = dict(T=450,p=5.0e6)
+    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    @staticmethod
+    def schedule(sim,t):
+        sim.set_params(T_inf=550,p_inf=5.0e6)
+
         
 class Transition_L2G():
     t_max = 1000.0
@@ -60,22 +58,50 @@ problems ={
     'Small_Gas':Small_Gas,
     'Transition_L2G':Transition_L2G,
     'Cycle_sgclg':Cycle_sgclg,
+    'Hot_Gas':Hot_Gas,
     }
 
-from SimDataDB import SimDataDB
 
-sdb = SimDataDB('testing.db')
-@sdb.Decorate('water_iapw',[('problem','string'),('network','string')],
-             [('series','array')],memoize=True)
-def solve_a_problem(problem_name, network):
-    problem = problems[problem_name]
-    ls = LatentSim(hub+network,scale_file,logp)
-    q0 = ls.find_point(**problem.initial)
-    ls.set_params(**problem.params)
-    time_series = ls.integrate(problem.t_max, q0, schedule=problem.schedule)
-    return {'series':time_series}
+hub = "/Users/afq/Google Drive/networks/"
+
+eoses = {
+    'water_slgc_logp_64':dict(
+        scale_file = "data_files/water_iapw_logp_ranges.csv",
+        logp=True,
+        problem_list=problems.keys()
+    ),
+    'water_lg':dict(
+        scale_file = "data_files/surf_ranges.csv",
+        logp=False,
+        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',]
+    ),
+    
+}
+
+def perform_tests_for_eos(eos, result_dir='.'):
+
+    networks = os.listdir(hub+'/training_'+eos)
+    problem_list = eoses[eos]['problem_list']
+    scale_file = eoses[eos]['scale_file']
+    logp = eoses[eos]['logp']
+    
+    sdb = SimDataDB(result_dir+'{0}_testing.db'.format(eos))
+    
+    @sdb.Decorate(eos,[('problem','string'),('network','string')],
+                 [('series','array')],memoize=True)
+    def solve_a_problem(problem_name, network):
+        print("Testing {0}:{1} on {2}".format(eos,network,problem_name))
+        problem = problems[problem_name]
+        ls = LatentSim(hub+'training_'+eos+'/'+network,scale_file,logp)
+        q0 = ls.find_point(**problem.initial)
+        ls.set_params(**problem.params)
+        time_series = ls.integrate(problem.t_max, q0, schedule=problem.schedule)
+        return {'series':time_series}
+    
+    for n in networks:
+        for p in problem_list:
+            solve_a_problem(p,n)
 
 if __name__=="__main__":
-    for n in networks:
-        for p in problems:
-            solve_a_problem(p,n)
+    for k in eoses:
+        perform_tests_for_eos(k, hub+'test_databases/')

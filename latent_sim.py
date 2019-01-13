@@ -30,20 +30,20 @@ class LatentSim():
         self.i_q = self._graph.get_tensor_by_name('i_q:0') 
         self.o_x = self._graph.get_tensor_by_name('decode:0')
         # hooks to the encoder
-        self.i_x = self._graph.get_tensor_by_name('i_x:0') 
+        self.i_x = self._graph.get_tensor_by_name('i_x:0')
         self.o_q = self._graph.get_tensor_by_name('encode:0')
         # The simulation inputs and outputs in the unscaled space
         # (the prior conditioning of the data put it on [-1,1])
         if scale_file:
             self.logp = logp
-            self.scale = np.loadtxt(scale_file,skiprows=1,delimiter=',')
+            raw_scale = np.loadtxt(scale_file,skiprows=1,delimiter=',')
+            self.scale = raw_scale[:,0:4]
             unshifted = unshift(self.o_x,self.scale[:,0:4])
             if logp:
                 self.o_s = tf.concat([ tf.expand_dims(unshifted[:,0], -1),
                                       tf.expand_dims(tf.math.exp(unshifted[:,1]), -1),
                                       unshifted[:,2:]], axis=1)
             else:
-                shifted = self.i_s
                 self.o_s = unshifted
         else:
             self.scale = None
