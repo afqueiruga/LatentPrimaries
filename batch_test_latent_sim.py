@@ -5,6 +5,14 @@ from latent_sim import LatentSim
 
 from SimDataDB import SimDataDB
 
+class Linear_Liquid():
+    t_max = 10.0
+    initial = dict(p = 1.0e5, T = 20.0+273.15)
+    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    @staticmethod
+    def schedule(sim,t):
+        sim.set_params(T_inf=293.15,p_inf=1.0e5+10.0)
+    
 class Small_Liquid():
     t_max = 1000.0
     initial = dict(T=350,p=5.0e5)
@@ -54,6 +62,7 @@ class Cycle_sgclg():
             sim.set_params(T_inf=400,p_inf=5.0e3)
 
 problems ={
+    'Linear_Liquid':Linear_Liquid,
     'Small_Liquid':Small_Liquid,
     'Small_Gas':Small_Gas,
     'Transition_L2G':Transition_L2G,
@@ -65,17 +74,21 @@ problems ={
 hub = "/Users/afq/Google Drive/networks/"
 
 eoses = {
-    'water_slgc_logp_64':dict(
-        scale_file = "data_files/water_iapw_logp_ranges.csv",
-        logp=True,
-        problem_list=problems.keys()
-    ),
-    'water_lg':dict(
-        scale_file = "data_files/surf_ranges.csv",
+#     'water_slgc_logp_64':dict(
+#         scale_file = "data_files/water_iapw_logp_ranges.csv",
+#         logp=True,
+#         problem_list=problems.keys()
+#     ),
+#     'water_lg':dict(
+#         scale_file = "data_files/surf_ranges.csv",
+#         logp=False,
+#         problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',]
+#     ),
+    'water_linear':dict(
+        scale_file = "data_files/water_linear_ranges.csv",
         logp=False,
-        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',]
+        problem_list=['Linear_Liquid',]
     ),
-    
 }
 
 def perform_tests_for_eos(eos, result_dir='.'):

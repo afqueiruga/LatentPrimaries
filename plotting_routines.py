@@ -98,7 +98,8 @@ if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
     eoses = [
 #         "water_slgc_logp_64",
-        "water_lg",
+#         "water_lg",
+        "water_linear",
     ]
     report_dir = hub+"report/"
     try:

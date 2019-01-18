@@ -94,14 +94,20 @@ class LatentSim():
         for i in range(200):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
+            print(Rt,Kt)
             R = Rt[0,idcs]-s0[0,idcs]
             K = Kt[0,idcs,:]
             Dq = np.linalg.solve(K,-R)
+            print(R,K,Dq)
 #             if Dq.isnan():
 #                 break
             nDq = np.linalg.norm(Dq)
 #             print nDq, q0
-            if np.isnan(Dq).any(): break
+
+            if np.isnan(Dq).any(): 
+                raise RuntimeError('Got a nan')
+            if np.linalg.norm(Dq)<1.0e-14: 
+                break # It might be 0
 #             print  min(1.0,nDq)*Dq/nDq
             q0[:] += min(0.5,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
@@ -168,6 +174,8 @@ class LatentSim():
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
             nDq = np.linalg.norm(Dq)
+            if nDq<1.0e-14: 
+                break # It might be 0, we're done
             step = min(0.001/nDq,1.0)*Dq
             # TODO line search
             qi[:] += step

@@ -100,7 +100,9 @@ if __name__=="__main__":
         {'type':'Deep','args':[1,[],1,[8,8,8]]},
         {'type':'Deep','args':[1,[],2,[8,8,8]]},
         {'type':'Deep','args':[1,[],3,[8,8,8]]},
-#         {'type':'Poly','args':[1,7]},
+        {'type':'Poly','args':[1,5]},
+        {'type':'Poly','args':[1,6]},
+        {'type':'Poly','args':[1,7]},
     ]
     for S in sets_to_try:
         train_autoencoder("water_lg",dataset, 4,2,S,
