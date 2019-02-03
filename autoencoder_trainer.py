@@ -35,13 +35,12 @@ class DoStuffHook(tf.train.SessionRunHook):
         return self
     
 def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
-                     training_dir='',n_epoch=5000):
+                     training_dir='',n_epoch=5000, image_freq=1500):
     autoclass = autoencoder_factory[hyper['type']]
     def sanitize(x):
         return str(x).replace(' ','').replace('[','(').replace(']',')')
     hyperpath = hyper['type']+'_'+','.join(map(sanitize,hyper['args']))
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
-    image_freq = 1500
     
     graph = tf.Graph()
     with graph.as_default():

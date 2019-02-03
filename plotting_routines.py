@@ -26,11 +26,11 @@ def make_tri_plot(x,y,z, simplices, c=None, offset=(0,0), name='', **kwargs):
                      intensity=c/np.max(c),
                      name=name,showscale = True,**kwargs)
 
-def plot_ptrho(D,simplices,colorby=-1,offset=[], name='',**kwargs):
+def plot_ptrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,0],D[:,1],D[:,2], simplices, c=D[:,colorby],
                         offset=offset,name=name,**kwargs)
 
-def plot_qqrho(D,simplices,colorby=-1,offset=[], name='',**kwargs):
+def plot_qqrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,4],D[:,5],D[:,2], simplices, c=D[:,colorby],
                         offset=offset,name=name,**kwargs)
 
@@ -48,6 +48,10 @@ def read_networks(training_dir):
         surfaces[arch] = ( dat, Delaunay(dat[:,4:6]).simplices )
     return surfaces
 
+def generate_trisurf_plots(surfaces):
+    return [ (n,go.Figure(data=[plot_ptrho(d,simp,name=n)]))
+             for n,(d,simp) in surfaces.items() ]
+
 def plot_networks(surfaces,prefix=''):
     offs = range(int(np.ceil(len(surfaces)**0.5)))
     offsets = list(itertools.product(offs,offs))
@@ -55,8 +59,8 @@ def plot_networks(surfaces,prefix=''):
     ptrhos = [ plot_ptrho(d,simp,offset=o,name=n)
                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
     fig = go.Figure(data=ptrhos)
-    py.plot(fig,filename=prefix+'networks.html')
-    
+    return fig
+
     qqrhos = [ plot_qqrho(d,simp,offset=o,name=n) 
                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
     fig = go.Figure(data=ptrhos)
@@ -92,7 +96,7 @@ def plot_simulations(database,eos_name,prefix=''):
                                    showlegend=showleg[n])
                 showleg[n]=False
                 subfig.append_trace(trace,4*(pos[0]-1)+i+1,pos[1])
-    py.plot(subfig, filename=prefix+'simulation_tests.html')
+    return subfig
     
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
@@ -107,7 +111,9 @@ if __name__=='__main__':
     except OSError:
         pass
     for eos in eoses:
+        prefix = report_dir+eos+'_'
         surfs = read_networks(hub+'training_'+eos)
-        plot_networks(surfs,prefix=report_dir+eos+'_')
-        plot_simulations(hub+'test_databases/'+eos+'_testing.db',
-                         eos,prefix=report_dir+eos+'_')
+        netplots = plot_networks(surfs)
+        py.plot(fig,filename=prefix+'networks.html')
+        simplots = plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
+        py.plot(simplots, filename=prefix+'simulation_tests.html')

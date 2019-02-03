@@ -126,7 +126,8 @@ class LatentSim():
             aii = self.regvar('aii',aii)
             Dt  = self.regvar('Dt',0.1)
 
-            m,r = self.m_and_r( *tf.split(self.o_s,4,axis=-1 ))
+            T,p,rho,h = tf.split(self.o_s,4,axis=-1)
+            m,r = self.m_and_r( T,p,rho,h )
             self.m = m
             self.r = r
             self.lhs = m - Dt*aii*r

@@ -90,7 +90,7 @@ class Autoencoder(object):
         qs = []
         ixs = []
         
-        for j in range(20):
+        for j in range(1):
             ix = myev(self.data,session=sess)
             qs.append(myev(self.o_q,feed_dict={self.i_x:ix},session=sess))
             ixs.append(ix)
