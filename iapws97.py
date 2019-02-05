@@ -134,7 +134,7 @@ def gibbs_region2(T,p):
 
     return R*T* (gamma_o + gamma_r)
 
-
+density_region2,enthalpy_region2 = density_enthalpy(gibbs_region2)
 
 
 def boundary_region23(T):

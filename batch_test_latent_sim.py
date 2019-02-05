@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys,inspect
+import iapws97
 
 class Linear_Liquid():
     t_max = 10.0
@@ -8,6 +9,9 @@ class Linear_Liquid():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=293.15,p_inf=1.0e5+10.0)
+    answer = dict(T=293.15,p=1.0e5+10.0,
+        rho=iapws97.density_region1(293.15,1.0e5+10.0),
+        h  =iapws97.enthalpy_region1(293.15,1.0e5+10.0) )
     
 class Small_Liquid():
     t_max = 1000.0
@@ -16,6 +20,9 @@ class Small_Liquid():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=450,p_inf=5.0e5)
+    answer = dict(T=450,p=5.0e5,
+        rho=iapws97.density_region1(450.0,5.0e5),
+        h  =iapws97.enthalpy_region1(450.0,5.0e5) )
 
 class Small_Gas():
     t_max = 1000.0
@@ -24,6 +31,9 @@ class Small_Gas():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=450,p_inf=5.0e3)
+    answer = dict(T=450,p=5.0e3,
+        rho= iapws97.density_region2(450.0,5.0e3),
+        h  =iapws97.enthalpy_region2(450.0,5.0e3) )
 
 class Hot_Gas():
     t_max = 1000.0
@@ -32,6 +42,9 @@ class Hot_Gas():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=550,p_inf=5.0e6)
+    answer = dict(T=450,p=5.0e6,
+        rho= iapws97.density_region2(450.0,5.0e6),
+        h  =iapws97.enthalpy_region2(450.0,5.0e6) )
 
         
 class Transition_L2G():
@@ -41,7 +54,10 @@ class Transition_L2G():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=350,p_inf=5.0e3)
-
+    answer = dict(T=350,p=5.0e3,
+        rho= iapws97.density_region2(450.0,5.0e3),
+        h  =iapws97.enthalpy_region2(450.0,5.0e3) )
+    
 class Cycle_sgclg():
     t_max = 100.0
     initial = dict(T=250,p=5.0e3)
@@ -56,7 +72,10 @@ class Cycle_sgclg():
             sim.set_params(T_inf=400,p_inf=3.0e7)
         elif t<4000.0:
             sim.set_params(T_inf=400,p_inf=5.0e3)
-
+    answer = dict(T=400,p=5.0e3,
+        rho= iapws97.density_region2(400.0,5.0e3),
+        h  =iapws97.enthalpy_region2(400.0,5.0e3) )
+    
             
 problems = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))
 
