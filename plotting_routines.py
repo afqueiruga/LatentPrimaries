@@ -34,6 +34,26 @@ def plot_qqrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,4],D[:,5],D[:,2], simplices, c=D[:,colorby],
                         offset=offset,name=name,**kwargs)
 
+def plot_qq_Tprhoh(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
+    plts = []
+#     subfig = tools.make_subplots(rows=2,cols=2,
+#         subplot_titles=('T','p','rho','h'),
+#         specs=[
+#         [{'is_3d': True}, {'is_3d': True}],
+#         [{'is_3d': True}, {'is_3d': True}]
+#     ])
+
+    for i in range(4):
+        offset_i = (offset[0] + 2*(i%2), offset[1] + 1.25*(i/2))
+        print(offset_i)
+        tp = make_tri_plot(D[:,4],D[:,5],D[:,i], simplices, c=D[:,colorby],
+                        offset=offset_i,name=name,**kwargs)
+#         subfig.append_trace(tp,1+i%2,1+i/2)
+        plts.append(tp)
+    # return subfig
+    return plts
+
+
 def read_networks(training_dir):
     archs = os.listdir(training_dir)
     archs.sort()
@@ -43,9 +63,10 @@ def read_networks(training_dir):
         files = list_files(training_dir+'/'+arch+'/surf_*.csv')
         try:
             dat = np.loadtxt(files[-1],delimiter=",",skiprows=1)
+            surfaces[arch] = ( dat, Delaunay(dat[:,4:6]).simplices )
         except:
-            dat = np.zeros((1,3))
-        surfaces[arch] = ( dat, Delaunay(dat[:,4:6]).simplices )
+            dat = np.zeros((3,7))
+            surfaces[arch] = ( dat, [] )
     return surfaces
 
 def generate_trisurf_plots(surfaces):
@@ -61,10 +82,10 @@ def plot_networks(surfaces,prefix=''):
     fig = go.Figure(data=ptrhos)
     return fig
 
-    qqrhos = [ plot_qqrho(d,simp,offset=o,name=n) 
-               for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
-    fig = go.Figure(data=ptrhos)
-    py.plot(fig,filename=prefix+'networks_q.html')
+#     qqrhos = [ plot_qqrho(d,simp,offset=o,name=n) 
+#                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
+#     fig = go.Figure(data=ptrhos)
+#     py.plot(fig,filename=prefix+'networks_q.html')
     
     
 def plot_simulations(database,eos_name,prefix=''):
@@ -101,9 +122,9 @@ def plot_simulations(database,eos_name,prefix=''):
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
     eoses = [
-#         "water_slgc_logp_64",
+        "water_slgc_logp_64",
 #         "water_lg",
-        "water_linear",
+#         "water_linear",
     ]
     report_dir = hub+"report/"
     try:
@@ -113,7 +134,14 @@ if __name__=='__main__':
     for eos in eoses:
         prefix = report_dir+eos+'_'
         surfs = read_networks(hub+'training_'+eos)
-        netplots = plot_networks(surfs)
-        py.plot(fig,filename=prefix+'networks.html')
-        simplots = plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
-        py.plot(simplots, filename=prefix+'simulation_tests.html')
+        
+#         netplots = plot_networks(surfs)
+#         py.plot(fig,filename=prefix+'networks.html')
+        
+#         simplots = plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
+#         py.plot(simplots, filename=prefix+'simulation_tests.html')
+        
+        qqplot = plot_qq_Tprhoh(*surfs['Classifying_2,4,12,24,sigmoid (1)'])
+        
+        py.plot(go.Figure(qqplot), filename=prefix+'qq_plots.html')
+        
