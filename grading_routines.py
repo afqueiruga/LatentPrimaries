@@ -16,6 +16,7 @@ def grade_simulations(database,eos_name):
     for n, in networks:
         successes = 0
         total_run_time = 0.0
+        redflag = False
         for p, in problems:
             res = sdb.Query(
                 'select series,run_time from {0} where problem="{1}" and network="{2}"'.
@@ -24,16 +25,18 @@ def grade_simulations(database,eos_name):
             end_time = series[0,-1]
             if end_time >= test_problems[p].t_max - 1.0e-12:
                 successes += 1
+            else:
+                redflag = True
             total_run_time += run_time
-        summaries[n] = [ successes, total_run_time]
+        summaries[n] = [ successes, total_run_time, redflag]
     return summaries
 
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
     eoses = [
         "water_slgc_logp_64",
-#         "water_lg",
-#         "water_linear",
+        "water_lg",
+        "water_linear",
     ]
     report_dir = hub+"report/"
     try:
@@ -45,3 +48,10 @@ if __name__=='__main__':
         test_db = hub+'test_databases/'+eos+'_testing.db'
         grades = grade_simulations(test_db,eos)
         
+        
+        print("Grading ",eos,":")
+        for n in grades:
+            v = grades[n]
+            print('{3} | {0: <32} |{1:8d} | {2:8f}'.format(
+                n,v[0],v[1],'x' if v[2] else 'o'))
+        print("\n")
