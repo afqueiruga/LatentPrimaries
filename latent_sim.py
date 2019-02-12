@@ -71,13 +71,27 @@ class LatentSim():
             x = s
         return self._sess.run(self.o_q, feed_dict={self.i_x:x})
     
-    def find_point(self, T=None, p=None, rho=None, h=None):
-        """Specify only two coordinates and find q!"""
-        s0 = np.expand_dims(self.scale[0,:],axis=0).copy()
-        if self.logp: s0[0,1] = np.exp(s0[0,1])
+    def find_point(self, T=None, p=None, rho=None, h=None, phase=None):
+        """Specify only two coordinates and find q!
+        
+        The phase tag only helps with the initial conditions.
+        """
+        
+        if phase==None:
+            s0 = np.expand_dims(self.scale[0,:],axis=0).copy()
+            if self.logp: s0[0,1] = np.exp(s0[0,1])
+        elif phase=="Gas":
+            pass
+        elif phase=="Liquid":
+            pass
+        elif phase=="Solid":
+            pass
+        elif phase=="Supercritical":
+            pass
+        else:
+            raise RuntimeError("LatentSim: Unknown phase tag.")
+        # Assign the initial condition and mark which we specified
         idcs = []
-
-        q0 = self.encode(s0)
         if not T is None:
             s0[0,0] = T
             idcs.append(0)
@@ -90,7 +104,12 @@ class LatentSim():
         if not h is None:
             s0[0,3] = h
             idcs.append(3)
+        if len(idcs)>2:
+            raise RuntimeError("LatentSim: You specified too many variables.")
         idcs = np.array(idcs, dtype=np.intc)
+        # Initial guess for q. TODO: Where should it be?
+        q0 = self.encode(s0)
+        # Iterate until the decoder is satisfied
         for i in range(200):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
