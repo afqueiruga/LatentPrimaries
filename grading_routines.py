@@ -2,10 +2,23 @@ from __future__ import division
 from __future__ import print_function
 import os, glob, re
 import numpy as np
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from SimDataDB import SimDataDB
 
 from batch_test_latent_sim import problems as test_problems
 
+def extract_scalars(directory):
+    # TODO: check if its a top-directory or the tf training session
+    archs = os.listdir(directory)
+    arch_dirs = [os.path.join(directory,a) for a in archs]
+    # Load summaries
+    summaries = [EventAccumulator(a).Reload() for a in arch_dirs]
+    # of
+    tags = summary_iterators[0].Tags()['scalars']
+    
+    for arch,summary in zip(archs,summaries):
+        pass
+    
 def grade_simulations(database,eos_name):
     """Examine and distill the results for each of the architectures"""
     sdb = SimDataDB(database)
