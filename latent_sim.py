@@ -118,14 +118,12 @@ class LatentSim():
             K = Kt[0,idcs,:]
             Dq = np.linalg.solve(K,-R)
             print(R,K,Dq)
-#             if Dq.isnan():
-#                 break
             nDq = np.linalg.norm(Dq)
 #             print nDq, q0
 
             if np.isnan(Dq).any(): 
                 raise RuntimeError('Got a nan')
-            if np.linalg.norm(Dq)<1.0e-14: 
+            if np.linalg.norm(Dq)<1.0e-14:
                 break # It might be 0
 #             print  min(1.0,nDq)*Dq/nDq
             q0[:] += min(0.5,nDq)*Dq/nDq
@@ -186,7 +184,8 @@ class LatentSim():
             self._vars[k].load(v,self._sess)
     
     def solve_a_time_step(self, q0):
-        """Solve one timestep. Note that LatentSim is stateless in this regard."""
+        """Solve one timestep. Note that LatentSim is stateless in this 
+        regard."""
         qi = q0.copy()
         rhs_0 = self._sess.run(self.rhs,feed_dict={self.i_q:q0})
         for k in range(500):
@@ -203,7 +202,8 @@ class LatentSim():
         return qi,k,nDq
     
     
-    def integrate(self,t_max, q0, Dt=0.1, schedule=lambda s,t :None):
+    def integrate(self, t_max, q0, Dt=0.1, schedule=lambda s,t :None):
+        """Integrate from t=0 to t_max."""
         t = 0
         self.set_params(Dt=Dt)
         q = q0.copy()
