@@ -22,9 +22,9 @@ viz = Visdom(port=FLAGS.port, server=FLAGS.server)
 
 hub = "/Users/afq/Google Drive/networks/"
 eoses = [
-        "water_slgc_logp_64",
-        "water_lg",
-#     "water_linear",
+#         "water_slgc_logp_64",
+#         "water_lg",
+    "water_linear",
 ]
 
 for eos in eoses:

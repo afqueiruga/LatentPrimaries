@@ -45,7 +45,6 @@ class Hot_Gas():
     answer = dict(T=450,p=5.0e6,
         rho= iapws97.density_region2(450.0,5.0e6),
         h  =iapws97.enthalpy_region2(450.0,5.0e6) )
-
         
 class Transition_L2G():
     t_max = 1000.0
@@ -79,14 +78,6 @@ class Cycle_sgclg():
             
 problems = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))
 
-# problems ={
-#     'Linear_Liquid':Linear_Liquid,
-#     'Small_Liquid':Small_Liquid,
-#     'Small_Gas':Small_Gas,
-#     'Transition_L2G':Transition_L2G,
-#     'Cycle_sgclg':Cycle_sgclg,
-#     'Hot_Gas':Hot_Gas,
-#     }
 
 hub = "/Users/afq/Google Drive/networks/"
 
