@@ -81,13 +81,13 @@ class LatentSim():
             s0 = np.expand_dims(self.scale[0,:],axis=0).copy()
             if self.logp: s0[0,1] = np.exp(s0[0,1])
         elif phase=="Gas":
-            pass
+            s0 = np.array([[450,1.0e2, 0.00048149,2835269.40]])
         elif phase=="Liquid":
-            pass
+            s0 = np.array([[350,1.0e7,978.09,329726.06]])
         elif phase=="Solid":
-            pass
+            s0 = np.array([[250,1.0e5,919.87,-379930.33]])
         elif phase=="Supercritical":
-            pass
+            s0 = np.array([[900,132167913.14,900,2964049.86]])
         else:
             raise RuntimeError("LatentSim: Unknown phase tag.")
         # Assign the initial condition and mark which we specified
@@ -113,11 +113,11 @@ class LatentSim():
         for i in range(200):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
-            print(Rt,Kt)
+            # print(Rt,Kt)
             R = Rt[0,idcs]-s0[0,idcs]
             K = Kt[0,idcs,:]
             Dq = np.linalg.solve(K,-R)
-            print(R,K,Dq)
+            # print(R,K,Dq)
             nDq = np.linalg.norm(Dq)
 #             print nDq, q0
 

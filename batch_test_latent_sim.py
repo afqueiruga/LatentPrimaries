@@ -4,7 +4,7 @@ import iapws97
 
 class Linear_Liquid():
     t_max = 10.0
-    initial = dict(p = 1.0e5, T = 20.0+273.15)
+    initial = dict(p = 1.0e5, T = 20.0+273.15, phase="Liquid")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod
     def schedule(sim,t):
@@ -15,7 +15,7 @@ class Linear_Liquid():
     
 class Small_Liquid():
     t_max = 1000.0
-    initial = dict(T=350,p=5.0e5)
+    initial = dict(T=350,p=5.0e5, phase="Liquid")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod
     def schedule(sim,t):
@@ -26,7 +26,7 @@ class Small_Liquid():
 
 class Small_Gas():
     t_max = 1000.0
-    initial = dict(T=350,p=5.0e3)
+    initial = dict(T=350,p=5.0e3, phase="Gas")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod
     def schedule(sim,t):
@@ -37,7 +37,7 @@ class Small_Gas():
 
 class Hot_Gas():
     t_max = 1000.0
-    initial = dict(T=450,p=5.0e6)
+    initial = dict(T=450,p=5.0e6, phase="Gas")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod
     def schedule(sim,t):
@@ -48,7 +48,7 @@ class Hot_Gas():
         
 class Transition_L2G():
     t_max = 1000.0
-    initial = dict(T=350,p=5.0e5)
+    initial = dict(T=350,p=5.0e5, phase="Liquid")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod
     def schedule(sim,t):
@@ -59,7 +59,7 @@ class Transition_L2G():
     
 class Cycle_sgclg():
     t_max = 100.0
-    initial = dict(T=250,p=5.0e3)
+    initial = dict(T=250,p=5.0e3, phase="Solid")
     params =  dict(k_p=1.0e-4,k_T=1.0e3)
     @staticmethod
     def schedule(sim,t):
@@ -117,7 +117,7 @@ def perform_tests_for_eos(eos, result_dir='.'):
     sdb = SimDataDB(result_dir+'{0}_testing.db'.format(eos))
     
     @sdb.Decorate(eos,[('problem','string'),('network','string')],
-                 [('series','array')],memoize=True)
+                 [('series','array')],memoize=False)
     def solve_a_problem(problem_name, network):
         print("Testing {0}:{1} on {2}".format(eos,network,problem_name))
         problem = problems[problem_name]
