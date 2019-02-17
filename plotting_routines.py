@@ -87,7 +87,43 @@ def plot_networks(surfaces,prefix=''):
 #     fig = go.Figure(data=ptrhos)
 #     py.plot(fig,filename=prefix+'networks_q.html')
     
-    
+
+def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
+    networks = sdb.Query('select distinct network from {0}'.format(eos_name))
+    legends = ['T','p','rho','h']
+    Nfields = len(legends)
+    gridx, gridy = 1,Nfields
+    showleg = defaultdict(lambda : True)
+    if colorkey is None:
+        colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
+        colorkey = defaultdict(lambda : colorring.next())
+    subfig = tools.make_subplots(rows=gridy,cols=gridx,
+                                 shared_xaxes=True,shared_yaxes=False)
+    res = sdb.Query(
+            'select network,series from {eos_name} where problem="{0}"'.
+            format(problem,eos_name=eos_name))
+    for i,name in enumerate(legends):
+        for n,t in res:
+            trace = go.Scatter(x=t[:,0],y=t[:,i+3],name=n,legendgroup=n,
+                               mode='lines',
+                               line=dict(color=colorkey[n]),
+                               showlegend=showleg[n])
+            showleg[n]=False
+            subfig.append_trace(trace,1+i,1)
+#     print(subfig)
+    return subfig
+
+def make_simulation_plot_list(database,eos_name):
+    colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
+    colorkey = defaultdict(lambda : colorring.next())
+    sdb = SimDataDB(database)
+    problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
+    print problems
+    plots = [ plot_one_simulation(sdb,eos_name, p[0], colorkey=colorkey) 
+             for p in problems ]
+    return plots
+
+        
 def plot_simulations(database,eos_name,prefix=''):
     """Plot all of the test simulations in a grid"""
     sdb = SimDataDB(database)
