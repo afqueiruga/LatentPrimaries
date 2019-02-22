@@ -134,17 +134,29 @@ def plot_simulations(database,eos_name,prefix=''):
     colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
     colorkey = defaultdict(lambda : colorring.next())
     numproblems=len(problems)
-    gridx = gridy = int(numproblems**0.5)
+    gridx = int(numproblems**0.5)+1
+    gridy = int(numproblems / gridx)+1
     positions = list(itertools.product(range(1,gridx+1),range(1,gridy+1)))
 
+#     titles, titles_trans = [], range(4*gridx*gridy)
+#     for prob in problems:
+#         titles.extend([prob[0]] + ['_' for _ in range(4-1) ])
+#     for i in range(4*gridx):
+#         for j in range(gridy):
+#             titles_trans[j*4*gridx+i] = titles[4*i*gridy+j]
+    titles = ['' for _ in range(4*gridx*gridy)]
+    for p,pos in zip(problems,positions):
+        #titles[4*gridx*(pos[1]-1)+(pos[0]-1)+1] = p[0]
+        titles[4*gridy*(pos[0]-1)+(pos[1]-1)] = p[0]
     subfig = tools.make_subplots(rows=4*gridx,cols=gridy,
-                             shared_xaxes=False,shared_yaxes=True)
+                  shared_xaxes=False, shared_yaxes=False,
+                  subplot_titles=titles)
     for p,pos in zip(problems,positions):
         res = sdb.Query(
             'select network,series from {eos_name} where problem="{0}"'.
             format(p[0],eos_name=eos_name))
         legends=['T','p','rho','h']
-        print p[0]
+        #print p[0]
         for i,name in enumerate(legends):
             for n,t in res:
                 trace = go.Scatter(x=t[:,0],y=t[:,i+3],name=n,legendgroup=n,
@@ -153,14 +165,15 @@ def plot_simulations(database,eos_name,prefix=''):
                                    showlegend=showleg[n])
                 showleg[n]=False
                 subfig.append_trace(trace,4*(pos[0]-1)+i+1,pos[1])
+#     from IPython import embed ; embed()
     return subfig
     
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
     eoses = [
         "water_slgc_logp_64",
-#         "water_lg",
-#         "water_linear",
+        "water_lg",
+        "water_linear",
     ]
     report_dir = hub+"report/"
     try:
@@ -169,15 +182,14 @@ if __name__=='__main__':
         pass
     for eos in eoses:
         prefix = report_dir+eos+'_'
-        surfs = read_networks(hub+'training_'+eos)
+#         surfs = read_networks(hub+'training_'+eos)
         
 #         netplots = plot_networks(surfs)
 #         py.plot(fig,filename=prefix+'networks.html')
         
-#         simplots = plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
-#         py.plot(simplots, filename=prefix+'simulation_tests.html')
+        simplots = plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
+        py.plot(simplots, filename=prefix+'simulation_tests.html')
         
-        qqplot = plot_qq_Tprhoh(*surfs['Classifying_2,4,12,24,sigmoid (1)'])
-        
-        py.plot(go.Figure(qqplot), filename=prefix+'qq_plots.html')
+#         qqplot = plot_qq_Tprhoh(*surfs['Classifying_2,4,12,24,sigmoid (1)']) 
+#         py.plot(go.Figure(qqplot), filename=prefix+'qq_plots.html')
         
