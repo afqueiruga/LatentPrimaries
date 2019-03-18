@@ -202,12 +202,14 @@ class LatentSim():
         return qi,k,nDq
     
     
-    def integrate(self, t_max, q0, Dt=0.1, schedule=lambda s,t :None):
+    def integrate(self, t_max, q0,
+                  schedule=lambda s,t :None,
+                  verbose=False):
         """Integrate from t=0 to t_max."""
         t = 0
-        self.set_params(Dt=Dt)
         q = q0.copy()
         timeseries = [np.c_[t,q,self.decode(q)]]
+        Dt = self._sess.run(self._vars['Dt'])
         while t<t_max:
             t+=Dt
             schedule(self, t)
@@ -216,8 +218,12 @@ class LatentSim():
                 print("NaN encountered at t=",t)
                 break
             if nDq > 2.0e-7:
-                print("Failed to converge at t=",t," |Dq| was ",nDq," after ",k," iterations; quiting.")
+                print("Failed to converge at t=",t,
+                      " |Dq| was ",nDq," after ",
+                      k," iterations; quiting.")
                 break
+            if verbose:
+                print(t,k,nDq)
             timeseries.append(np.c_[t,q,self.decode(q)])
         return np.vstack(timeseries)
         

@@ -47,9 +47,9 @@ class Hot_Gas():
         h  =iapws97.enthalpy_region2(450.0,5.0e6) )
         
 class Transition_L2G():
-    t_max = 1000.0
+    t_max = 1.0
     initial = dict(T=350,p=5.0e5, phase="Liquid")
-    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    params =  dict(k_p=1.0e-4,k_T=1.0e4, Dt=t_max/100.0)
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=350,p_inf=5.0e3)
@@ -105,10 +105,21 @@ eoses = {
     ),
 }
 
-
-
+def run_one_simulation(eos,network,problem_name):
+    """Run one of the tests in an environment we can embed into."""
+    scale_file = eoses[eos]['scale_file']
+    logp = eoses[eos]['logp']
+    problem = problems[problem_name]
+    ls = LatentSim(hub+'training_'+eos+'/'+network,scale_file,logp)
+    q0 = ls.find_point(**problem.initial)
+    ls.set_params(**problem.params)
+    time_series = ls.integrate(problem.t_max, q0, 
+                               schedule=problem.schedule,
+                              verbose=True)
+    return time_series, ls
+    
 def perform_tests_for_eos(eos, result_dir='.'):
-
+    """Perform all of the tests and generate a report."""
     networks = os.listdir(hub+'/training_'+eos)
     problem_list = eoses[eos]['problem_list']
     scale_file = eoses[eos]['scale_file']
