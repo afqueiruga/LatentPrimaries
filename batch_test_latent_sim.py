@@ -3,7 +3,7 @@ import sys,inspect
 import iapws97
 
 class Linear_Liquid():
-    t_max = 10.0
+    t_max = 1.0
     initial = dict(p = 1.0e5, T = 20.0+273.15, phase="Liquid")
     params =  dict(k_p=1.0e-4,k_T=1.0e4)
     @staticmethod

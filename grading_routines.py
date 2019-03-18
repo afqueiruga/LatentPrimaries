@@ -1,23 +1,31 @@
 from __future__ import division
 from __future__ import print_function
 import os, glob, re
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from SimDataDB import SimDataDB
 
 from batch_test_latent_sim import problems as test_problems
 
+
+
 def extract_scalars(directory):
     # TODO: check if its a top-directory or the tf training session
     archs = os.listdir(directory)
-    arch_dirs = [os.path.join(directory,a) for a in archs]
-    # Load summaries
-    summaries = [EventAccumulator(a).Reload() for a in arch_dirs]
-    # of
-    tags = summary_iterators[0].Tags()['scalars']
-    
-    for arch,summary in zip(archs,summaries):
-        pass
+    scalars = {}
+    for arch in archs:
+        path = os.path.join(directory,arch)
+        try:
+            acc = EventAccumulator(path)
+            acc.Reload()
+            tags = acc.Tags()['scalars']
+            print(tags)
+            w_times, step_nums, vals = zip(*acc.Scalars('goal'))
+            scalars[arch] = np.mean(vals[-10:])
+        except:
+            pass
+    return scalars
     
 def grade_simulations(database,eos_name):
     """Examine and distill the results for each of the architectures"""
@@ -72,14 +80,21 @@ if __name__=='__main__':
     for eos in eoses:
         prefix = report_dir+eos+'_'
         test_db = hub+'test_databases/'+eos+'_testing.db'
+        training_dir = hub+'training_'+eos 
         grades = grade_simulations(test_db,eos)
-        
+        training_scores = extract_scalars(training_dir)
         
         print("Grading ",eos,":")
+        print(" | name | train_goal | succ | min_err | max_err | run_time |")
         for n in grades:
             v = grades[n]
-            print('{flag} | {name: <32} |{successes:3d} | {min_error:1.2e} | {max_error:1.2e} | {run_time: 3.1f}'.format(
+            try:
+                goal = training_scores[n]
+            except:
+                goal = -1
+            print('{flag} | {name: <32} | {goal:1.2e} |{successes:3d} | {min_error:1.2e} | {max_error:1.2e} | {run_time: 3.1f}'.format(
                 name=n,
+                goal=goal,
                 successes=v[0],
                 run_time=v[1],
                 flag='x' if v[2] else 'o',
