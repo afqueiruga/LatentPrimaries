@@ -129,7 +129,12 @@ class LatentSim():
             q0[:] += min(0.5,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
                 break
-        print("Found point at ", self.decode(q0), " after ",i," iterations.")
+        s_found = self.decode(q0)
+        print("Found point at ", s_found, " after ",i," iterations.")
+
+        if np.linalg.norm(s_found[0,idcs]-s0[0,idcs])>1.0e-3:
+            print("But that point was far away.")
+            raise RuntimeError("Couldn't find point")
         return q0
     
     def build_dae(self, method='BWEuler'):

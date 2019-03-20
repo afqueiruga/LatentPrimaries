@@ -1,6 +1,8 @@
 from __future__ import division
 from __future__ import print_function
 import os, glob, re
+import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -20,7 +22,6 @@ def extract_scalars(directory):
             acc = EventAccumulator(path)
             acc.Reload()
             tags = acc.Tags()['scalars']
-            print(tags)
             w_times, step_nums, vals = zip(*acc.Scalars('goal'))
             scalars[arch] = np.mean(vals[-10:])
         except:
@@ -81,9 +82,12 @@ if __name__=='__main__':
         prefix = report_dir+eos+'_'
         test_db = hub+'test_databases/'+eos+'_testing.db'
         training_dir = hub+'training_'+eos 
-        grades = grade_simulations(test_db,eos)
-        training_scores = extract_scalars(training_dir)
-        
+        try:
+            grades = grade_simulations(test_db,eos)
+            training_scores = extract_scalars(training_dir)
+        except:
+            print(eos," doesn't have enough data to grade")
+            continue
         print("Grading ",eos,":")
         print(" | name | train_goal | succ | min_err | max_err | run_time |")
         for n in grades:

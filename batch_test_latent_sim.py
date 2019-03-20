@@ -16,7 +16,7 @@ class Linear_Liquid():
 class Small_Liquid():
     t_max = 1000.0
     initial = dict(T=350,p=5.0e5, phase="Liquid")
-    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    params =  dict(k_p=1.0e-4,k_T=1.0e4,Dt=10.0)
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=450,p_inf=5.0e5)
@@ -27,7 +27,7 @@ class Small_Liquid():
 class Small_Gas():
     t_max = 1000.0
     initial = dict(T=350,p=5.0e3, phase="Gas")
-    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    params =  dict(k_p=1.0e-4,k_T=1.0e4,Dt=10.0)
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=450,p_inf=5.0e3)
@@ -36,15 +36,15 @@ class Small_Gas():
         h  =iapws97.enthalpy_region2(450.0,5.0e3) )
 
 class Hot_Gas():
-    t_max = 1000.0
-    initial = dict(T=450,p=5.0e6, phase="Gas")
-    params =  dict(k_p=1.0e-4,k_T=1.0e4)
+    t_max = 10000.0
+    initial = dict(T=450,p=5.0e5, phase="Gas")
+    params =  dict(k_p=1.0e-4,k_T=1.0e4, Dt=100.0)
     @staticmethod
     def schedule(sim,t):
-        sim.set_params(T_inf=550,p_inf=5.0e6)
-    answer = dict(T=450,p=5.0e6,
-        rho= iapws97.density_region2(450.0,5.0e6),
-        h  =iapws97.enthalpy_region2(450.0,5.0e6) )
+        sim.set_params(T_inf=550,p_inf=5.0e5)
+    answer = dict(T=550,p=5.0e5,
+        rho= iapws97.density_region2(450.0,5.0e5),
+        h  =iapws97.enthalpy_region2(450.0,5.0e5) )
         
 class Transition_L2G():
     t_max = 1.0
@@ -75,7 +75,7 @@ class Cycle_sgclg():
         rho= iapws97.density_region2(400.0,5.0e3),
         h  =iapws97.enthalpy_region2(400.0,5.0e3) )
     
-            
+
 problems = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))
 
 
@@ -105,7 +105,7 @@ eoses = {
     ),
 }
 
-def run_one_simulation(eos,network,problem_name):
+def run_one_simulation(eos,network,problem_name,verbose=True):
     """Run one of the tests in an environment we can embed into."""
     scale_file = eoses[eos]['scale_file']
     logp = eoses[eos]['logp']
@@ -115,7 +115,7 @@ def run_one_simulation(eos,network,problem_name):
     ls.set_params(**problem.params)
     time_series = ls.integrate(problem.t_max, q0, 
                                schedule=problem.schedule,
-                              verbose=True)
+                              verbose=verbose)
     return time_series, ls
     
 def perform_tests_for_eos(eos, result_dir='.'):
