@@ -57,6 +57,16 @@ class Autoencoder(object):
         ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step())
         return ts
     
+    def _get_hess_vars(self):
+        """These are variables used for the final fitting
+        phase."""
+        retrun (self.vars["dec_W"], self.vars["dec_b"])
+        
+    def _make_hess_train_step(self,data):
+        loss = self.make_goal(data)
+        newt = atu.NewtonsMethod(loss, self._get_hess_vars())
+        return newt
+    
     def eval_q(self, i_x):
         return sess.eval( self.o_q, feed_dict={self.i_x:i_x} )
 
