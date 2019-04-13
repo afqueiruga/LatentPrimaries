@@ -1,3 +1,6 @@
 [submodule "afqstensorutils"]
 	path = afqstensorutils
 	url = /Users/afq/Documents/Dropbox/MyLibraries/afqstensorutils
+[submodule "equations_of_state"]
+	path = equations_of_state
+	url = /Users/afq/Documents/Dropbox/ML/equations_of_state/
