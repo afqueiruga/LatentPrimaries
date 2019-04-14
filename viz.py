@@ -23,12 +23,12 @@ viz = Visdom(port=FLAGS.port, server=FLAGS.server)
 hub = "/Users/afq/Google Drive/networks/"
 eoses = [
         "water_slgc_logp_64",
-        "water_lg",
-    "water_linear",
+#         "water_lg",
+#     "water_linear",
 ]
 
 for eos in eoses:
-#     surfs = rout.read_networks(hub+'training_'+eos)
+
     # netplots = rout.plot_networks(surfs)
     # Subplots
     simplots = rout.make_simulation_plot_list(hub+'test_databases/'+eos+'_testing.db',eos)
@@ -37,13 +37,13 @@ for eos in eoses:
     # The monolithic plot
 #     simplots = rout.plot_simulations(hub+'test_databases/'+eos+'_testing.db',eos)
 #     viz.plotlyplot(simplots, win='win_'+eos, env=eos)
-
-#     viz.update_window_opts('win_'+eos,{'width':500,'height':500})
-#     netplots = rout.generate_trisurf_plots(surfs)
-#     for n,p in netplots:
-#         viz.plotlyplot(p, win='net_'+eos+n, env=eos)
-#         viz.update_window_opts('net_'+eos+n,
-#                                {'width':200,'height':200})
+    surfs = rout.read_networks(hub+'training_'+eos)
+    viz.update_window_opts('win_'+eos,{'width':500,'height':500})
+    netplots = rout.generate_trisurf_plots(surfs)
+    for n,p in netplots:
+        viz.plotlyplot(p, win='net_'+eos+n, env=eos)
+        viz.update_window_opts('net_'+eos+n,
+                               {'width':200,'height':200})
     
 
     
