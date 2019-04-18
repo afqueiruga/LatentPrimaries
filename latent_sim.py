@@ -15,6 +15,7 @@ class LatentSim():
         self._graph = None
         self._sess = None
         self._vars = {}
+        self.model_name = model_loc
         self.load_model(model_loc, scale_file,logp)
         self.build_dae(method)
         

@@ -14,24 +14,28 @@ class Autoencoder(object):
     """
     A class for generating autoencoders.
 
-    This parentclass is a linear map that's principal component analysis.
+    This parentclass is a linear map that's (maybe?) principal component analysis.
     """
-    def __init__(self, size_x, size_q, data):
+    def __init__(self, size_x, size_q, data, data_all=None):
         self.size_x = size_x
         self.size_q = size_q
-        self.dtype = data.dtype #tf.float32 # TODO check from data
+        self.dtype = data.dtype
         # Storage for my variables
         self.vars = {}
         # Make the trainer
         self.data = data
         self.goal = self.make_goal(data)
         self.train_step = self._make_train_step(data)
+        if data_all is None: data_all = data
+        self.goal_all = self.make_goal(data_all)
+        self.newt_step = self._make_hess_train_step(data_all)
+
         # Make evaluating graphs
         self.i_x = tf.placeholder(name='i_x', shape=(None,size_x,), dtype=self.dtype )
         self.o_q = self.encode( self.i_x, name='encode' )
         self.i_q = tf.placeholder(name='i_q', shape=(None,size_q,), dtype=self.dtype )
         self.o_x = self.decode( self.i_q, name='decode' )
-        self.o_grad_x = atu.vector_gradient(self.o_x, self.i_q)
+#         self.o_grad_x = atu.vector_gradient(self.o_x, self.i_q)
         # Make the loggers for tensorboard
         
     def encode(self, x, name=None):
@@ -60,7 +64,7 @@ class Autoencoder(object):
     def _get_hess_vars(self):
         """These are variables used for the final fitting
         phase."""
-        retrun (self.vars["dec_W"], self.vars["dec_b"])
+        return (self.vars["dec_W"], self.vars["dec_b"])
         
     def _make_hess_train_step(self,data):
         loss = self.make_goal(data)
@@ -96,11 +100,11 @@ class Autoencoder(object):
     def _extra_saves(self, ixs,qs,session=None):
         return "",[]
     
-    def save_fit(self, fname, header,sess=None):
+    def save_fit(self, fname, header,sess=None,samples=1):
         qs = []
         ixs = []
         
-        for j in range(1):
+        for j in range(samples):
             ix = myev(self.data,session=sess)
             qs.append(myev(self.o_q,feed_dict={self.i_x:ix},session=sess))
             ixs.append(ix)
@@ -127,10 +131,10 @@ class PolyAutoencoder(Autoencoder):
     """
     The basic implementation.
     """
-    def __init__(self, size_x, size_q, data, Np_enc, Np_dec):
+    def __init__(self, size_x, size_q, data, Np_enc, Np_dec, data_all=None):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
-        Autoencoder.__init__(self,size_x, size_q, data)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all)
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
@@ -151,12 +155,12 @@ class DeepPolyAutoencoder(Autoencoder):
     """
     The Deep relu'ed layers on each side
     """
-    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers):
+    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers, data_all=None):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
         self.enc_layers = enc_layers
         self.dec_layers = dec_layers
-        Autoencoder.__init__(self,size_x, size_q, data)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all)
         
     def _layers(self, inp, sizes, prefix=""):
         nxt = inp
@@ -195,7 +199,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         'relu':tf.nn.relu
     }
     def __init__(self, size_x, size_q, data, p_enc, p_dec, N_curve, N_bound,
-                 boundary_activation='tanh',softmax_it=True):
+                 boundary_activation='tanh',softmax_it=True, data_all=None):
         self.Np_enc = p_enc
         self.Np_dec = p_dec
 
@@ -203,7 +207,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.N_bound = N_bound
         self.boundary_activation = boundary_activation
         self.softmax_it = softmax_it
-        Autoencoder.__init__(self,size_x, size_q, data)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all)
         self.o_class = self.classify(self.i_q)
         
     def encode(self, x, name=None):
@@ -245,3 +249,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         probs = myev(self.o_class,feed_dict={self.i_q:qs},session=session)
         classes = probs.argmax(axis=-1)
         return ",classes",classes
+
+    def _get_hess_vars(self):
+        """These are variables used for the final fitting
+        phase."""
+        return (self.vars["dec_W_curve"], self.vars["dec_b_curve"])
