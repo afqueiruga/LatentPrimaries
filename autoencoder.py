@@ -28,7 +28,7 @@ class Autoencoder(object):
         self.train_step = self._make_train_step(data)
         if data_all is None: data_all = data
         self.goal_all = self.make_goal(data_all)
-        self.newt_step = self._make_hess_train_step(data_all)
+        self.newt_step = None
 
         # Make evaluating graphs
         self.i_x = tf.placeholder(name='i_x', shape=(None,size_x,), dtype=self.dtype )
@@ -69,6 +69,7 @@ class Autoencoder(object):
     def _make_hess_train_step(self,data):
         loss = self.make_goal(data)
         newt = atu.NewtonsMethod(loss, self._get_hess_vars())
+        self.newt_step = newt
         return newt
     
     def eval_q(self, i_x):
