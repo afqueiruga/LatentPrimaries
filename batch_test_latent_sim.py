@@ -116,6 +116,14 @@ eoses = {
     ),
 }
 
+def curried_latentssim(eos,network):
+    """Curried constructor for LatentSim with the hub and 
+    eos registry."""
+    scale_file = eoses[eos]['scale_file']
+    logp = eoses[eos]['logp']
+    ls = LatentSim(hub+'training_'+eos+'/'+network,scale_file,logp)
+    return ls
+
 def run_one_simulation(eos,network,problem_name,verbose=True):
     """Run one of the tests in an environment we can embed into."""
     scale_file = eoses[eos]['scale_file']
