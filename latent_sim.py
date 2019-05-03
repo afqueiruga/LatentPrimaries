@@ -50,8 +50,8 @@ class LatentSim():
             self.scale = None
             self.o_s = self.o_x
         
-        self.o_dxdq = atu.vector_gradient(self.o_x, self.i_q)
-        self.o_dsdq = atu.vector_gradient(self.o_s, self.i_q)
+        self.o_dxdq = atu.vector_gradient_dep(self.o_x, self.i_q)
+        self.o_dsdq = atu.vector_gradient_dep(self.o_s, self.i_q)
         
         self.dtype = self.i_x.dtype
 
@@ -72,25 +72,22 @@ class LatentSim():
             x = s
         return self._sess.run(self.o_q, feed_dict={self.i_x:x})
     
-    def find_point(self, T=None, p=None, rho=None, h=None, phase=None):
+    def find_point(self, T=None, p=None, rho=None, h=None, 
+                   phase=None, under_relax=1.0,verbose=True):
         """Specify only two coordinates and find q!
         
         The phase tag only helps with the initial conditions.
         """
-        
-        if phase==None:
-            s0 = np.expand_dims(self.scale[0,:],axis=0).copy()
-            if self.logp: s0[0,1] = np.exp(s0[0,1])
-        elif phase=="Gas":
-            s0 = np.array([[450,1.0e2, 0.00048149,2835269.40]])
-        elif phase=="Liquid":
-            s0 = np.array([[350,1.0e7,978.09,329726.06]])
-        elif phase=="Solid":
-            s0 = np.array([[250,1.0e5,919.87,-379930.33]])
-        elif phase=="Supercritical":
-            s0 = np.array([[900,132167913.14,900,2964049.86]])
-        else:
-            raise RuntimeError("LatentSim: Unknown phase tag.")
+        s0_none = np.expand_dims(self.scale[0,:],axis=0).copy()
+        if self.logp: s0_none[0,1] = np.exp(s0_none[0,1])
+        guesses = {
+            None: s0_none,
+            "Gas": np.array([[450,1.0e2, 0.00048149,2835269.40]]),
+            "Liquid": np.array([[350,1.0e7,978.09,329726.06]]),
+            "Solid": np.array([[250,1.0e5,919.87,-379930.33]]),
+            "Supercritical": np.array([[900,132167913.14,900,2964049.86]])
+        }
+        s0 = guesses[phase]
         # Assign the initial condition and mark which we specified
         idcs = []
         if not T is None:
@@ -108,10 +105,15 @@ class LatentSim():
         if len(idcs)>2:
             raise RuntimeError("LatentSim: You specified too many variables.")
         idcs = np.array(idcs, dtype=np.intc)
+        return self._find_point(s0, idcs, 
+                                under_relax=under_relax,
+                               verbose=verbose)
+    
+    def _find_point(self, s0, idcs, under_relax=0.1,verbose=False):
         # Initial guess for q. TODO: Where should it be?
         q0 = self.encode(s0)
         # Iterate until the decoder is satisfied
-        for i in range(200):
+        for i in range(500):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
             # print(Rt,Kt)
@@ -123,18 +125,22 @@ class LatentSim():
 #             print nDq, q0
 
             if np.isnan(Dq).any(): 
+                print("Iteration failed with a nan.")
                 raise RuntimeError('Got a nan')
             if np.linalg.norm(Dq)<1.0e-14:
                 break # It might be 0
 #             print  min(1.0,nDq)*Dq/nDq
-            q0[:] += min(0.5,nDq)*Dq/nDq
+            q0[:] += under_relax*Dq #min(0.5,nDq)*Dq/nDq
             if np.linalg.norm(Dq)<5.0e-7:
                 break
         s_found = self.decode(q0)
-        print("Found point at ", s_found, " after ",i," iterations.")
-
-        if np.linalg.norm(s_found[0,idcs]-s0[0,idcs])>1.0e-3:
-            print("But that point was far away.")
+        
+        if np.linalg.norm([ 
+            (s_found[0,c]-s0[0,c])/s0[0,c] 
+            for c in idcs]) > 0.0001:
+            if verbose: 
+                print("Found point at ", s_found, " after ",i,
+                      " iterations, But that point was far away.")
             raise RuntimeError("Couldn't find point")
         return q0
     
@@ -155,7 +161,7 @@ class LatentSim():
             self.r = r
             self.lhs = m - Dt*aii*r
             self.rhs = m + (1.0-aii)*Dt*r
-            self.K_lhs = atu.vector_gradient(self.lhs,self.i_q)
+            self.K_lhs = atu.vector_gradient_dep(self.lhs,self.i_q)
 
             # Initialize parameters
             ini=tf.variables_initializer(self._vars.values())
@@ -163,7 +169,7 @@ class LatentSim():
         
     def regvar(self, name,val):
         """Register a variable into the system of equations."""
-        self._vars[name]=tf.Variable(val,dtype=self.dtype)
+        self._vars[name] = tf.Variable(val,dtype=self.dtype)
         return self._vars[name]
     
     def m_and_r(self, T,p,rho,h):
@@ -195,7 +201,7 @@ class LatentSim():
         qi = q0.copy()
         rhs_0 = self._sess.run(self.rhs,feed_dict={self.i_q:q0})
         for k in range(500):
-            K_k,lhs_k = self._sess.run([self.K_lhs,self.lhs],feed_dict={self.i_q:qi})
+            K_k,lhs_k = self._sess.run([self.K_lhs,self.lhs], feed_dict ={self.i_q:qi})
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
             nDq = np.linalg.norm(Dq)
