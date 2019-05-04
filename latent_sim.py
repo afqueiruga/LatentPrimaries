@@ -87,27 +87,50 @@ class LatentSim():
             "Solid": np.array([[250,1.0e5,919.87,-379930.33]]),
             "Supercritical": np.array([[900,132167913.14,900,2964049.86]])
         }
-        s0 = guesses[phase]
-        # Assign the initial condition and mark which we specified
-        idcs = []
-        if not T is None:
-            s0[0,0] = T
-            idcs.append(0)
-        if not p is None:
-            s0[0,1] = p
-            idcs.append(1)
-        if not rho is None:
-            s0[0,2] = rho
-            idcs.append(2)
-        if not h is None:
-            s0[0,3] = h
-            idcs.append(3)
-        if len(idcs)>2:
-            raise RuntimeError("LatentSim: You specified too many variables.")
-        idcs = np.array(idcs, dtype=np.intc)
-        return self._find_point(s0, idcs, 
-                                under_relax=under_relax,
-                               verbose=verbose)
+        # One guess:
+#         s0 = guesses[phase]
+        # Try all of the guesses:
+        ss = []
+        for phase in guesses:
+            s0 = guesses[phase]
+            # Assign the initial condition and mark which we specified
+            idcs = []
+            if not T is None:
+                s0[0,0] = T
+                idcs.append(0)
+            if not p is None:
+                s0[0,1] = p
+                idcs.append(1)
+            if not rho is None:
+                s0[0,2] = rho
+                idcs.append(2)
+            if not h is None:
+                s0[0,3] = h
+                idcs.append(3)
+            if len(idcs)>2:
+                raise RuntimeError("LatentSim: You specified too many variables.")
+            idcs = np.array(idcs, dtype=np.intc)
+            try:
+                s = self._find_point(s0, idcs, 
+                                    under_relax=under_relax,
+                                    verbose=verbose)
+                ss.append(s)
+            except RuntimeError as e:
+                pass
+        if len(ss)==0:
+            print("None of the initial guesses converged!")
+            raise RuntimeError("None of the initial guesses converged!")
+        dist_closest = 1.0e10
+        s_closest = ss[0]
+        for s_found in ss:
+            dist = np.linalg.norm([ 
+                (s_found[0,c]-s0[0,c])/s0[0,c] 
+                for c in idcs])
+            if dist < dist_closest:
+                s_closest = s_found
+        return s_closest
+            
+            
     
     def _find_point(self, s0, idcs, under_relax=0.1,verbose=False):
         # Initial guess for q. TODO: Where should it be?
