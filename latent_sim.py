@@ -129,14 +129,12 @@ class LatentSim():
             if dist < dist_closest:
                 s_closest = s_found
         return s_closest
-            
-            
     
     def _find_point(self, s0, idcs, under_relax=0.1,verbose=False):
         # Initial guess for q. TODO: Where should it be?
         q0 = self.encode(s0)
         # Iterate until the decoder is satisfied
-        for i in range(500):
+        for i in range(100):
             Rt,Kt = self._sess.run([self.o_s,self.o_dsdq],
                                 feed_dict={self.i_q:q0})
             # print(Rt,Kt)
@@ -146,7 +144,6 @@ class LatentSim():
             # print(R,K,Dq)
             nDq = np.linalg.norm(Dq)
 #             print nDq, q0
-
             if np.isnan(Dq).any(): 
                 print("Iteration failed with a nan.")
                 raise RuntimeError('Got a nan')

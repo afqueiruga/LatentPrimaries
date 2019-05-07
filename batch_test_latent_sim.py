@@ -134,7 +134,7 @@ def run_one_simulation(eos,network,problem_name,verbose=True):
     ls.set_params(**problem.params)
     time_series = ls.integrate(problem.t_max, q0, 
                                schedule=problem.schedule,
-                              verbose=verbose)
+                               verbose=verbose)
     return time_series, ls
     
 def perform_tests_for_eos(eos, result_dir='.'):
