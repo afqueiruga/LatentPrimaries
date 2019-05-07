@@ -10,6 +10,12 @@ def myev(x,feed_dict={},session=None):
     else:
         return x.eval(feed_dict=feed_dict)
     
+encoder_init_options = {
+    "pT":np.array([[1,0],[0,1],[0,0],[0,0]],dtype=np.float),
+    "rhoh":np.array([[0,0],[0,0],[1,0],[0,1]],dtype=np.float),
+    "rand":np.array([[0,0],[0,0],[0,0],[0,0]],dtype=np.float),
+}
+    
 class Autoencoder(object):
     """
     A class for generating autoencoders.
@@ -17,12 +23,12 @@ class Autoencoder(object):
     This parentclass is a linear map that's (maybe?) principal component analysis.
     """
     def __init__(self, size_x, size_q, data, data_all=None,
-                 encoder_init=None):
+                 encoder_init="rand"):
         self.size_x = size_x
         self.size_q = size_q
         self.dtype = data.dtype
         # initialization options
-        
+        self.encoder_init = encoder_init
         # Storage for my variables
         self.vars = {}
         # Make the trainer
@@ -42,7 +48,8 @@ class Autoencoder(object):
         # Make the loggers for tensorboard
         
     def encode(self, x, name=None):
-        W = self._var( "enc_W", (self.size_q, self.size_x) )
+        W = self._var( "enc_W", (self.size_q, self.size_x),
+                     initial_value=encoder_init_options[self.encoder_init])
         b = self._var( "enc_b", (self.size_q,) )
         return tf.add(tf.matmul(W,x),b,name=name)
     
@@ -83,7 +90,11 @@ class Autoencoder(object):
         try:
             v = self.vars[name]
         except KeyError:
-            ini = tf.truncated_normal(shape=shape,
+            if not initial_value is None:
+                ini = tf.constant(initial_value) + tf.truncated_normal(shape=shape,
+                       stddev=stddev, dtype=self.dtype)
+            else:
+                ini = tf.truncated_normal(shape=shape,
                        stddev=stddev, dtype=self.dtype)
             v = tf.Variable(
                   ini,
@@ -138,14 +149,16 @@ class PolyAutoencoder(Autoencoder):
     """
     The basic implementation.
     """
-    def __init__(self, size_x, size_q, data, Np_enc, Np_dec, data_all=None):
+    def __init__(self, size_x, size_q, data, Np_enc, Np_dec, 
+                 data_all=None,encoder_init="rand"):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
         Autoencoder.__init__(self,size_x, size_q, data, data_all)
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
-        We1 = self._var("enc_W", (N_coeff, self.size_q) )
+        We1 = self._var("enc_W", (N_coeff, self.size_q),
+                        initial_value = encoder_init_options[self.encoder_init])
         be1 = self._var("enc_b", (self.size_q,) )
         q = tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
         return tf.identity(q,name=name)
@@ -162,7 +175,8 @@ class DeepPolyAutoencoder(Autoencoder):
     """
     The Deep relu'ed layers on each side
     """
-    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers, data_all=None):
+    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers,
+                 data_all=None, encoder_init="rand"):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
         self.enc_layers = enc_layers
@@ -206,7 +220,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         'relu':tf.nn.relu
     }
     def __init__(self, size_x, size_q, data, p_enc, p_dec, N_curve, N_bound,
-                 boundary_activation='tanh',softmax_it=True, data_all=None):
+                 boundary_activation='tanh',softmax_it=True, data_all=None,
+                 encoder_init="rand"):
         self.Np_enc = p_enc
         self.Np_dec = p_dec
 
@@ -219,7 +234,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
-        W = self._var("enc_W", (N_coeff, self.size_q) )
+        W = self._var("enc_W", (N_coeff, self.size_q), 
+                     initial_value=encoder_init_options[self.encoder_init])
         b = self._var("enc_b", (self.size_q,) )
         return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b, name=name)
     

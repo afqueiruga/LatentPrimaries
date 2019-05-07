@@ -34,12 +34,13 @@ class DoStuffHook(tf.train.SessionRunHook):
         self.func = func
         return self
     
-def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
-                     training_dir='',n_epoch=5000, image_freq=1500):
+def train_autoencoder(name, dataset, outerdim, innerdim, 
+                      hyper=default_hyper,
+                      training_dir='',n_epoch=5000, image_freq=1500):
     autoclass = autoencoder_factory[hyper['type']]
     def sanitize(x):
         return str(x).replace(' ','').replace('[','(').replace(']',')')
-    hyperpath = hyper['type']+'_'+','.join(map(sanitize,hyper['args']))
+    hyperpath = hyper['type']+'_'+hyper['ini']+'_'+','.join(map(sanitize,hyper['args']))
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
     
     graph = tf.Graph()
@@ -49,7 +50,8 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
         stream = tf.transpose(stream)
         global_step = tf.train.get_or_create_global_step()
         onum = tf.Variable(0,name="csv_output_num")
-        ae = autoclass(outerdim, innerdim, stream, *hyper['args'])
+        ae = autoclass(outerdim, innerdim, stream, *hyper['args'],
+                       encoder_init=hyper['ini'])
         init = tf.global_variables_initializer()
         meta_graph_def = tf.train.export_meta_graph(filename=training_dir+"/final_graph.meta")
         
@@ -101,15 +103,17 @@ if __name__=="__main__":
 #         {'type':'Deep','args':[1,[],1,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],2,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],3,[8,8,8]]},
-        {'type':'Poly','args':[1,5]},
+        {'type':'Poly','args':[1,5],'ini':'rand'},
+        {'type':'Poly','args':[1,5],'ini':'pT'},
+        {'type':'Poly','args':[1,5],'ini':'rhoh'},
 #         {'type':'Poly','args':[1,6]},
 #         {'type':'Poly','args':[1,7]},
     ]
-    initialization_modes = [
-        "pT",
-        "rhoh",
-        "rand",
-    ]
+#     initialization_modes = [
+#         "pT",
+#         "rhoh",
+#         "rand",
+#     ]
     inner_penalty = [
         0.0,
         0.1,
