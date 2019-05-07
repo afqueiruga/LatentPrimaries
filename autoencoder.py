@@ -16,10 +16,13 @@ class Autoencoder(object):
 
     This parentclass is a linear map that's (maybe?) principal component analysis.
     """
-    def __init__(self, size_x, size_q, data, data_all=None):
+    def __init__(self, size_x, size_q, data, data_all=None,
+                 encoder_init=None):
         self.size_x = size_x
         self.size_q = size_q
         self.dtype = data.dtype
+        # initialization options
+        
         # Storage for my variables
         self.vars = {}
         # Make the trainer
@@ -75,12 +78,15 @@ class Autoencoder(object):
     def eval_q(self, i_x):
         return sess.eval( self.o_q, feed_dict={self.i_x:i_x} )
 
-    def _var(self, name, shape, stddev=0.1):
+    def _var(self, name, shape, stddev=0.1, 
+             initial_value=None):
         try:
             v = self.vars[name]
         except KeyError:
+            ini = tf.truncated_normal(shape=shape,
+                       stddev=stddev, dtype=self.dtype)
             v = tf.Variable(
-                  tf.truncated_normal(shape=shape, stddev=stddev,dtype=self.dtype),
+                  ini,
                   name=name,
                   dtype=self.dtype)
             self.vars[name] = v

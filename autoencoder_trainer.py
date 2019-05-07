@@ -83,7 +83,7 @@ def train_autoencoder(name, dataset, outerdim, innerdim, hyper=default_hyper,
 if __name__=="__main__":
     training_dir = "/Users/afq/Google Drive/networks/"
     data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
-    n_epoch = 25000
+    data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
     dataset = tf.data.experimental.make_csv_dataset(
         data_dir+'water_lg_sharded/*.csv',
         5000,
@@ -101,10 +101,29 @@ if __name__=="__main__":
 #         {'type':'Deep','args':[1,[],1,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],2,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],3,[8,8,8]]},
-#         {'type':'Poly','args':[1,5]},
+        {'type':'Poly','args':[1,5]},
 #         {'type':'Poly','args':[1,6]},
-        {'type':'Poly','args':[1,7]},
+#         {'type':'Poly','args':[1,7]},
     ]
+    initialization_modes = [
+        "pT",
+        "rhoh",
+        "rand",
+    ]
+    inner_penalty = [
+        0.0,
+        0.1,
+    ]
+#     n_epoch = 25000
+    n_epoch = 10
+#     import joblib
+#     @joblib.delayed
+#     def job(S):
+#         train_autoencoder("water_lg",dataset, 4,2,S,
+#                           training_dir=training_dir,
+#                           n_epoch = n_epoch)
+#         return 1
+#     joblib.Parallel(n_jobs=2)(job(S) for S in sets_to_try)
     for S in sets_to_try:
         train_autoencoder("water_lg",dataset, 4,2,S,
                           training_dir=training_dir,
