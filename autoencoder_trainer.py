@@ -12,7 +12,7 @@ def sanitize_string(x):
     return str(x).replace(' ','').replace('[','(').replace(']',')')
 def string_identifier(hyper):
     return hyper['type'] + '_' + \
-           hyper['ini']  + '_' + str(hyper['cae']) + \
+           hyper['ini']  + '_' + str(hyper['cae']) +'_'+ \
            ','.join(map(sanitize_string,hyper['args']))
 
 
