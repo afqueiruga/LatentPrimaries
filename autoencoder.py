@@ -23,12 +23,14 @@ class Autoencoder(object):
     This parentclass is a linear map that's (maybe?) principal component analysis.
     """
     def __init__(self, size_x, size_q, data, data_all=None,
-                 encoder_init="rand"):
+                 encoder_init="rand",
+                 cae_lambda=0):
         self.size_x = size_x
         self.size_q = size_q
         self.dtype = data.dtype
         # initialization options
         self.encoder_init = encoder_init
+        self.cae_lambda = cae_lambda
         # Storage for my variables
         self.vars = {}
         # Make the trainer
@@ -60,10 +62,14 @@ class Autoencoder(object):
         return tf.identity(x,name=name)
     
     def make_goal(self, data):
-        pred = self.decode(self.encode(data))
-#         p = tf.reduce_sum(tf.pow( data - pred, 2) ) 
-        p = tf.losses.mean_squared_error(data, pred)
-        return p
+        q = self.encode(data)
+        pred = self.decode(q)
+        loss = tf.losses.mean_squared_error(data, pred)
+        if self.cae_lambda != 0:
+            cae = self.cae_lambda * tf.norm(atu.vector_gradient(q,data))
+            return loss + cae
+        else:
+            return loss
 
     def _make_train_step(self, data):
         opt = tf.train.AdamOptimizer(1e-2)
@@ -147,13 +153,17 @@ class Autoencoder(object):
         
 class PolyAutoencoder(Autoencoder):
     """
-    The basic implementation.
+    The basic implementation. Reduces to the linear case when the 
+    polynomial bases are set to 0 on either side.
     """
     def __init__(self, size_x, size_q, data, Np_enc, Np_dec, 
-                 data_all=None,encoder_init="rand"):
+                 data_all=None, encoder_init="rand",
+                 cae_lambda=0):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
-        Autoencoder.__init__(self,size_x, size_q, data, data_all)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all,
+                            encoder_init=encoder_init,
+                            cae_lambda=cae_lambda)
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
@@ -175,13 +185,16 @@ class DeepPolyAutoencoder(Autoencoder):
     """
     The Deep relu'ed layers on each side
     """
-    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, Np_dec, dec_layers,
-                 data_all=None, encoder_init="rand"):
+    def __init__(self, size_x, size_q, data, Np_enc, enc_layers, 
+                 Np_dec, dec_layers,
+                 data_all=None, encoder_init="rand", cae_lambda=0):
         self.Np_enc = Np_enc
         self.Np_dec = Np_dec
         self.enc_layers = enc_layers
         self.dec_layers = dec_layers
-        Autoencoder.__init__(self,size_x, size_q, data, data_all)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all,
+                            encoder_init=encoder_init,
+                            cae_lambda=cae_lambda)
         
     def _layers(self, inp, sizes, prefix=""):
         nxt = inp
@@ -219,9 +232,12 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         'sigmoid':tf.sigmoid,
         'relu':tf.nn.relu
     }
-    def __init__(self, size_x, size_q, data, p_enc, p_dec, N_curve, N_bound,
-                 boundary_activation='tanh',softmax_it=True, data_all=None,
-                 encoder_init="rand"):
+    def __init__(self, size_x, size_q, data, p_enc, 
+                 p_dec, N_curve, N_bound,
+                 boundary_activation='tanh', softmax_it=True,
+                 data_all=None,
+                 encoder_init="rand",
+                 cae_lambda=0):
         self.Np_enc = p_enc
         self.Np_dec = p_dec
 
@@ -229,7 +245,9 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.N_bound = N_bound
         self.boundary_activation = boundary_activation
         self.softmax_it = softmax_it
-        Autoencoder.__init__(self,size_x, size_q, data, data_all)
+        Autoencoder.__init__(self,size_x, size_q, data, data_all,
+                            encoder_init=encoder_init,
+                            cae_lambda=cae_lambda)
         self.o_class = self.classify(self.i_q)
         
     def encode(self, x, name=None):

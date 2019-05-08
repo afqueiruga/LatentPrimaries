@@ -4,13 +4,30 @@ from autoencoder import *
 default_hyper = {
     'type':'Default',
     'args':[],
+    'ini':'rand',
+    'cae':0,
 }
-autoencoder_factory = {
-    'Default':Autoencoder,
-    'Poly':PolyAutoencoder,
-    'Deep':DeepPolyAutoencoder,
-    'Classifying':ClassifyingPolyAutoencoder,
-}
+
+def sanitize_string(x):
+    return str(x).replace(' ','').replace('[','(').replace(']',')')
+def string_identifier(hyper):
+    return hyper['type'] + '_' + \
+           hyper['ini']  + '_' + str(hyper['cae']) + \
+           ','.join(map(sanitize_string,hyper['args']))
+
+
+def AutoencoderFactory(hyper, outerdim, innerdim, stream):
+    "Parse the hyperparameter dict"
+    class_factory = {
+        'Default':Autoencoder,
+        'Poly':PolyAutoencoder,
+        'Deep':DeepPolyAutoencoder,
+        'Classifying':ClassifyingPolyAutoencoder,
+    }
+    autoclass = class_factory[hyper['type']]
+    return autoclass(outerdim, innerdim, stream, *hyper['args'],
+                     encoder_init=hyper['ini'],
+                     cae_lambda=hyper['cae'])
 
 
 class SaveAtEndHook(tf.train.SessionRunHook):
@@ -34,24 +51,27 @@ class DoStuffHook(tf.train.SessionRunHook):
         self.func = func
         return self
     
-def train_autoencoder(name, dataset, outerdim, innerdim, 
+def train_autoencoder(name, dataname, outerdim, innerdim, 
                       hyper=default_hyper,
                       training_dir='',n_epoch=5000, image_freq=1500):
-    autoclass = autoencoder_factory[hyper['type']]
-    def sanitize(x):
-        return str(x).replace(' ','').replace('[','(').replace(']',')')
-    hyperpath = hyper['type']+'_'+hyper['ini']+'_'+','.join(map(sanitize,hyper['args']))
+    
+    hyperpath = string_identifier(hyper)
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
     
     graph = tf.Graph()
     with graph.as_default():
+        dataset = tf.data.experimental.make_csv_dataset(
+            data_dir+'/'+dataname,
+            5000,
+            select_columns=['T',' p',' rho',' h'],
+            column_defaults=[tf.float64,tf.float64,tf.float64,tf.float64]
+        )
         # Set up the graph from the inputs
         stream = atu.make_datastream(dataset,batch_size=0,buffer_size=1000)
         stream = tf.transpose(stream)
         global_step = tf.train.get_or_create_global_step()
         onum = tf.Variable(0,name="csv_output_num")
-        ae = autoclass(outerdim, innerdim, stream, *hyper['args'],
-                       encoder_init=hyper['ini'])
+        ae = AutoencoderFactory(hyper,outerdim,innerdim,stream)
         init = tf.global_variables_initializer()
         meta_graph_def = tf.train.export_meta_graph(filename=training_dir+"/final_graph.meta")
         
@@ -86,12 +106,8 @@ if __name__=="__main__":
     training_dir = "/Users/afq/Google Drive/networks/"
     data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
     data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
-    dataset = tf.data.experimental.make_csv_dataset(
-        data_dir+'water_lg_sharded/*.csv',
-        5000,
-        select_columns=['T',' p',' rho',' h'],
-        column_defaults=[tf.float64,tf.float64,tf.float64,tf.float64]
-    )
+    dataset = "water_lg_sharded/*.csv"
+    
     sets_to_try = [
 #         {'type':'Classifying','args':[1,1, 6,12,'tanh']},
 #         {'type':'Classifying','args':[1,1, 6,12,'sigmoid']},
@@ -103,9 +119,9 @@ if __name__=="__main__":
 #         {'type':'Deep','args':[1,[],1,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],2,[8,8,8]]},
 #         {'type':'Deep','args':[1,[],3,[8,8,8]]},
-        {'type':'Poly','args':[1,5],'ini':'rand'},
-        {'type':'Poly','args':[1,5],'ini':'pT'},
-        {'type':'Poly','args':[1,5],'ini':'rhoh'},
+        {'type':'Poly','args':[1,5],'ini':'rand','cae':0},
+        {'type':'Poly','args':[1,5],'ini':'pT','cae':0},
+        {'type':'Poly','args':[1,5],'ini':'rhoh','cae':0},
 #         {'type':'Poly','args':[1,6]},
 #         {'type':'Poly','args':[1,7]},
     ]
