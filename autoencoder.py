@@ -11,9 +11,9 @@ def myev(x,feed_dict={},session=None):
         return x.eval(feed_dict=feed_dict)
     
 encoder_init_options = {
-    "pT":np.array([[1,0],[0,1],[0,0],[0,0]],dtype=np.float),
-    "rhoh":np.array([[0,0],[0,0],[1,0],[0,1]],dtype=np.float),
-    "rand":np.array([[0,0],[0,0],[0,0],[0,0]],dtype=np.float),
+    "pT":np.array([[1,0],[0,1],[0,0],[0,0]],dtype=np.float64),
+    "rhoh":np.array([[0,0],[0,0],[1,0],[0,1]],dtype=np.float64),
+    "rand":np.array([[0,0],[0,0],[0,0],[0,0]],dtype=np.float64),
 }
     
 class Autoencoder(object):
@@ -66,8 +66,10 @@ class Autoencoder(object):
         pred = self.decode(q)
         loss = tf.losses.mean_squared_error(data, pred)
         if self.cae_lambda != 0:
-            cae = self.cae_lambda * tf.norm(atu.vector_gradient(q,data))
-            return loss + cae
+            dqdx = atu.vector_gradient_dep(q,data)
+            cae = tf.constant(self.cae_lambda,dtype=self.dtype) \
+                    * tf.norm(dqdx, axis=(1,2))
+            return loss + tf.metrics.mean(cae)[0] # CHECK
         else:
             return loss
 
@@ -97,7 +99,7 @@ class Autoencoder(object):
             v = self.vars[name]
         except KeyError:
             if not initial_value is None:
-                ini = tf.constant(initial_value) + tf.truncated_normal(shape=shape,
+                ini = tf.constant(initial_value,dtype=self.dtype) + tf.truncated_normal(shape=shape,
                        stddev=stddev, dtype=self.dtype)
             else:
                 ini = tf.truncated_normal(shape=shape,
