@@ -75,21 +75,25 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         data_all = np.load(data_dir+"water_lg_scaled_train.npy") # TODO
         dataset_all  = tf.data.Dataset.from_tensors(data_all).repeat()
         dataset_mini = tf.data.Dataset.from_tensor_slices(data_all).repeat()
-        # test_data = np.load(data_dir+'/'+"water_lg_scaled_test.npy")
-        # testset = tf.data.Dataset.from_tensors(test_data).repeat()
+        test_data = np.load(data_dir+'/'+"water_lg_scaled_test.npy")
+        dataset_test = tf.data.Dataset.from_tensors(test_data).repeat()
         
         stream_all = dataset_all.make_one_shot_iterator().get_next()
         stream_mini = dataset_mini.batch(1000).make_one_shot_iterator().get_next()
+        stream_test = dataset_test.make_one_shot_iterator().get_next()
+
         global_step = tf.train.get_or_create_global_step()
         onum = tf.Variable(0,name="csv_output_num")
         ae = AutoencoderFactory(hyper,outerdim,innerdim,stream_mini, stream_all)
         ae._make_hess_train_step(stream_all)
+        ae.goal_test = ae.make_goal(stream_test)
         init = tf.global_variables_initializer()
         meta_graph_def = tf.train.export_meta_graph(filename=training_dir+"/final_graph.meta")
         
         # Add some more hooks
         loghook = tf.train.SummarySaverHook(
-            summary_op=tf.summary.scalar("goal",ae.goal),
+            summary_op=[tf.summary.scalar("goaltrain",ae.goal_all),
+                        tf.summary.scalar("goaltest",ae.goal_test)],
             save_steps=25,output_dir=training_dir)
         stophook = tf.train.StopAtStepHook(num_steps=n_epoch)
         saverhook = SaveAtEndHook(training_dir+"/final_variables")
@@ -105,9 +109,10 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
             ae.save_fit(training_dir+"/surf_{0}.csv".format(onum_val),
                         header,sess=ctx.session)
         # Do hessian steps here and there
-        @DoStuffHook(freq=n_epoch-1)
+        @DoStuffHook(freq=n_epoch/2)
         def newthook(ctx,run_values):
             # Now do the Hessian step on the last layer
+            print("Running the newton step")
             for i in range(5):
                 ctx.session.run(ae.newt_step)
         # set up the session
