@@ -289,14 +289,14 @@ In future work, we would want to continue appending new $q$s in a systemic way t
 
 ## Encoder Initializations
 
-The properties $p,T$ are the usual prefered choice for primary variables, but as discussed above, the equations of state are not analytic for any choice. (Indeed, this idea first spawned when the author was thinking about systematically rewriting equations in $\rho,h$.) Ideally, this system would be fully automated, but due to the nonlinearilty of the autoencoder problem there are many "bad" options the trainer can fall into. Multiple starts are possibly needed to get a good solution when starting from purely randomized newtork parameters. Global optimization is truly a necessity when trying to optimize networks with so few parameters. We incorporate a little bit of human intuition and preference by trying three options to start off the autoencoder: 1) fully random, 2) $p,T$ prefered, 3) $\rho,h$ prefered. This is implemented by added a bias to the initialization of the encoder coefficients,
+The properties $p,T$ are the usual prefered choice for primary variables, but as discussed above, the equations of state are not analytic for any choice. (Indeed, this idea first spawned when the author was thinking about systematically rewriting equations in $\rho,h$.) Ideally, this system would be fully automated, but due to the nonlinearilty of the autoencoder problem there are many "bad" options the trainer can fall into. Multiple starts are possibly needed to get a good solution when starting from purely randomized newtork parameters. Global optimization is truly a necessity when trying to optimize networks with so few parameters. We incorporate a little bit of human intuition and preference by trying three options to start off the autoencoder: 1) fully random, 2) $p,T$ prefered, 3) $\rho,h$ prefered. This is implemented by added a bias to the initialization of the encoder coefficients, e.g. for $p,T$
 
 $$ W^{init}_{enc} = \left[\begin{array}{cccc}
 1 & 0 & 0 & 0 & … \\
 0 & 1 & 0 & 0 & ...
 \end{array}\right]+[\sigma]$$
 
-where $[\sigma]$ is the random initialization and $…$ denotes padding the nonlinear coefficients by 0s. Recall that the values for $s$ have already been rescaled to be around 0 with a range of 1. $\sigma ~ \mathcal{N}(0,0.1)$ 
+where $[\sigma]$ is the random initialization and $…$ denotes padding the  coefficients to the nonlinear terms by 0s. Recall that the values for $s$ have already been rescaled to be around 0 with a range of 1. The random initialization part is decided by $\sigma \sim \mathcal{N}(0,0.1)$ .
 
 
 
@@ -399,6 +399,23 @@ The weakness of this necessity means that more error checking is needed in verif
 
 The current implementation LatentSim does not support inputting via saturations on the equilibria, a commonly used primary variable, but this problem could be solved with future engineering work for a non-experimental simulator.
 
+## Methodology Summary
+
+1. Make a database of $T,p,\rho,h,X_1,...$  
+   - Piece together empirical fits for each phase from literature
+   - (*Experimental data in the future*)
+2. Normalize (and $\log(p)$) the database, shuffle it  
+   - $\log(p)$ distributes the low-$p$ phases evenly w.r.t. high-$p$ phases
+3. Train the autoencoder on batch-generated architectures. Note that phase labels are not used.
+4. Load the models and generate physics code
+5. Verify and grade architectures on tests
+   - Need more than autoencoder mean-squared-error
+   - Differentiability and numerical stability in simulation
+   - Evaluation speed (billions of times in a simulation!)
+6. Pick best one to package into production code
+
+
+
 ## Pseudo-code
 
 ```
@@ -425,21 +442,6 @@ Helper methods that the author reuses in various TensorFlow-based projects are f
 The implementation of the empirical equations of state for water are factored out at [https://github.com/afqueiruga/equations_of_state](https://github.com/afqueiruga/equations_of_state).
 
 # Simulation Evaluation
-
-## Methodology Summary
-
-1. Make a database of $T,p,\rho,h,X_1,...$  
-   - Piece together empirical fits for each phase from literature
-   - (*Experimental data in the future*)
-1. Normalize (and $\log(p)$) the database, shuffle it  
-  - $\log(p)$ distributes the low-$p$ phases evenly w.r.t. high-$p$ phases
-1. Train the autoencoder on batch-generated architectures. Note that phase labels are not used.
-1. Load the models and generate physics code
-1. Verify and grade architectures on tests
-  - Need more than autoencoder mean-squared-error
-  - Differentiability and numerical stability in simulation
-  - Evaluation speed (billions of times in a simulation!)
-1. Pick best one to package into production code
 
 Multiple hyperparameters are trained.
 
