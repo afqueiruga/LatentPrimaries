@@ -127,7 +127,16 @@ intractability problem to modeling. How do we analyze complex
 experimental data and \emph{ab initio} simulations and derive new
 macroscale relations to describe the systems? How do we then implement
 these relations in the rest of our analyses and production-scale
-computer simulations? A single material with multiple phase transitions
+computer simulations?
+
+Accurately simulating multispecies reaction and transport with
+undergoing phase transitions is a critical aspect to a variety of
+problems.
+Motivations for this work are subsurface energy systems such as shale
+and oceanic natural gas reservoirs in shales or engineered geothermal
+systems.
+
+A single material with multiple phase transitions
 is a challenge in of itself, and the descriptions become combinatorially
 more complex as species and phases are added. This results in
 combinatorially more human labor and combinatorially more code which
@@ -136,23 +145,49 @@ numerical challenges when incorporated into macroscale simulations due
 to obstacles such as discrete phase state machines and primary variable
 switching.
 
-Motivations for this work are subsurface energy systems such as shale
-and oceanic natural gas reservoirs in shales or engineered geothermal
-systems.
+The system of equations we are looking at are, for only two components,
+\begin{align}
+  \partial_t \rho_{H_2O} =& \nabla \cdot flux_{H_2O} + s \\
+  \partial_t \rho_{CO_2} =& \nabla \cdot flux_{CO_2} + s \\
+  \partial_t e& = \nabla \cdot flux_{heat} + s
+\end{align}
+More species add more rows, and applicaitons also involve continuum
+mechanics and chemical reactions! The interplay of deformations,
+reactions, and phase transitions makes the equations extremely difficult
+to solve. \cite{my millstone paper}
 
-This work is only considered with the "single beaker" problem; the flow
+This work only considers the "single beaker" problem; the flow
 and transport aspects have similar challenges. (The next stage of this
 work will "connect the beakers".)
 
-This work proposes a new methodology that steps away from the
-traditional approaches
+In section 2, we will cast the above equation into a basic form for a
+differential algebraic equation,
+\begin{align}
+  z( u, \partial_t u) &= 0 \\
+  c(u) & = 0
+\end{align}
+We will introduce a new way of thinking about constraints as sets of
+solutions or observations of possible $u$:
+\begin{equation}
+c(u)=0 \leftrightarrow \left\{ u | c(u)=0 \;\text{or}\; u\; \text{observed} \right\}
+\end{equation}
+We will use this set of possible values viewpoint to train an
+autoencoder on the set of $u$ for a latent space parameterized by $q$:
+\begin{equation}
+u = D(q), \; q=E(u) \;\forall u \in U
+\end{equation}
+which satisifies
+\begin{equation}
+  D(q)\in U \forall q.
+\end{equation}
+We can then write the original equation by
+\begin{equation}
+z(q,\partial_t q)=0
+\end{equation}
 
-In this approach, we directly \emph{look for solvable representations}
-instead of representations that carry human intuition. We value
-simulation runtime and robustness. Further, we must remember the value
-of the human effort involved: beyond improving computational aspects,
-we are fully automating part of the human involvement in programming
-the simulator.
+
+
+
 
 Part of the new modern software engineering framework involves replacing
 human-written code with computer-written code. We are applying this
@@ -203,35 +238,49 @@ balance laws. Through deep learning approaches combined with
 domain-specific goals, we can learn feature sets that are both
 interpretable and directly apply to analyzing larger systems.
 
-Consider a general differential algebraic equation of the form
 
-\begin{equation}
-z(\dot{u},u) = 0
-\end{equation}
 
-We are interested in equations that have the form
+This work proposes a new methodology that steps away from the
+traditional approaches. 
+In this approach, we directly \emph{look for solvable representations}
+instead of representations that carry human intuition. We value
+simulation runtime and robustness. Further, we must remember the value
+of the human effort involved: beyond improving computational aspects,
+we are fully automating part of the human involvement in programming
+the simulator.
 
-\begin{align}
-\frac{\mathrm{d}u}{\mathrm{d}t} & = v \\
-0 & = c(u,v)
-\end{align}
+In section 2, the balance of mass and energy will be described for a
+single multiphase material. We will discuss the current state of the
+art algorithm for deriving relationships for multiphase materials, and
+then the primary-variable switching algorithm that is used in
+state-of-the art solvers. The equation will then be recast as a
+constraint problem in th above form.
+In section 3, we will demonstrate applying the autoencoder learning
+methodology to solve the pendulum,
+which can be considered the archetypical constraint problem.
+In section 4, the autoencoder methodology wil lbe applied to the
+equation of state of water. In section 5, the new simulation process
+will be described, wherein the learned decoders are placed into the
+balance laws, forming newly discovered equations on learned
+representations. The software implementation of the training and
+simulation programs are detailed in section 6. The new simulation
+framework on sets of learned representations is evaluated on
+multiple datasets of varying extents of water with a
+hyperparameter search on a suite of test problems to prouce the discussion of section 7, as
+well as a systematic automated testing procedure of a
+machine-dominated programming methodology.
+Active research and software development directions are
+concluded in the final section.
 
-Where do such equations arise? A simple example is the pendulum, which
-will be explored in Section 2.
-
-\begin{align}
-\text{Solve for}\, x(t), \, y(t), \, f(t) \, \text{satisfying:} \\
-m \dot{x} & = f x/L \\
-m \dot{y} & = f y/L + m g \\
-x^2 + y^2 & = L^2
-\end{align}
+The notebooks and software implementations are released open source to
+accompany this work. They can be found at the github repository
+located at: \href{https://github.com/afqueiruga/latentsim}
+Certain components are factored into submodule repositories which are
+each released under the LGPL at seperate repositories referenced in
+the implementation details.
 
 \hypertarget{header-n3234}{%
 \section{Multiphase Equations of State}\label{header-n3234}}
-
-We also consider the phase equilibria; at a larger scale it is possible
-for a control volume to be a mixture of two phase coexisting, such as
-boiling with some mixture saturation \(S_{gas}=1-S_{liq}\).
 
 For this preliminary work, we consider only a single-beaker problem
 without flow. Let \(\rho\) be the material density, \(T\) be the
@@ -264,16 +313,19 @@ the DAE for \(p\) and \(T\) implicitly:
 
 The complicatation is that the functions \(\rho(p,T)\) and \(u(p,T)\)
 are not well defined functions due to the presence of phase changes that
-yield sharp discontinuities in \(p,T\), as shown in Figure 1 for water.
+yield sharp discontinuities in \(p,T\), as shown in Figure 1 for
+water.
+
+We also consider the phase equilibria; at a larger scale it is possible
+for a control volume to be a mixture of two phase coexisting, such as
+boiling with some mixture saturation \(S_{gas}=1-S_{liq}\).
+(For a very fine scale simulation, bubbles would be explicitly modeled.)
 The material can exist on this section of the surface as a mixture of
 the two phases.
 
 \[\rho = X_{H_2O}\left(S_{gas} \rho_{gas} + S_{liq} \rho_{liq} + S_{ice} \rho_{ice} + S_{crit} \rho_{crit} \right)\]
 
-We will also note right now that applicaitons also involve continuum
-mechanics and chemical reactions! The interplay of deformations,
-reactions, and phase transitions makes the equations extremely difficult
-to solve.
+
 
 One possible definition of phase boundaries:
 
@@ -287,14 +339,27 @@ https://en.wikipedia.org/wiki/Phase\_transition
 \begin{figure}
 \centering
 \includegraphics{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/figures/phase_diagram.png}
-\caption{}
+\caption{Phase boundaries for water }
 \end{figure}
 
 \begin{figure}
 \centering
 \includegraphics{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/figures/water_eos.png}
-\caption{}
+\caption{\label{fig:pTrho} The $\log{p}$, $T$, $\rho$ equation of
+  state surface for water. This plot spans four phases, three
+  equilibria, and the triple point, which are each given their own color.
+  There is a fourth dimension to the surface of enthalpy $h$ that exhibits
+  similar discontinuities; the $\log{p}$, $T$, $h$ surface is plotted
+  in the Appendix.}
 \end{figure}
+
+There are even more known phases of crystal ice which for water
+For water, the supercritical phase and exotic ices only occur in
+laboratory conditions or naturally near the
+crust \cite{}. For other materials these exotic phases can be
+applicable. For example, in geoengineered systems using $CO_2$
+such as geothermal plants are carbon sequestration facilities, the
+working fluid is usually in the supercritical regime at depth.
 
 \hypertarget{header-n3253}{%
 \subsection{State Machine logic}\label{header-n3253}}
@@ -359,51 +424,63 @@ and robust fit. What if we search for a new fit?
 \hypertarget{header-n3267}{%
 \section{The Pendulum}\label{header-n3267}}
 
-An archetypical constraint problem the pendulum. Posed as dynamics, it
+An archetypical constraint problem the pendulum. Posed as dynamics
+problem with a Lagrange-multipler-esque centripetal force, it
 has three unknowns wtih two second-order equations and a constraint,
 
 \begin{align}
 \text{Solve for}\, x(t), \, y(t), \, f(t) \, \text{satisfying:} \\
-m \ddot{x} & = f x/L \\
-m \ddot{y} & = f y/L + m g \\
-x^2 + y^2 & = L^2
+m \ddot{x} & = f x/\sqrt{x^2+y^2} \\
+m \ddot{y} & = f y/\sqrt{x^2+y^2} - m g \\
+x^2 + y^2 & = R^2
 \end{align}
 
-In our methodology, we do not have an explicit equation for the
-constraint, but a dataset of (x,y) pairs that are on the manifold. For
-our proof-of-concept test, we manufacture this data for the pendulum.
+
 Note that we are considering the nonlinear pendulum.
 
 There are many ways to solve this cannonical equation: Lagrange
 multipliers (\(f(t)\) is the multiplier in the way we have written it
-now), penalties, change of variables, etc. The change of variables
-method is to introduce a new variable \(\theta\) that parameterizes
-\(x=L\cos\theta\) and \(y=L\sin\theta\):
-
-\begin{align}
-\text{Solve for}\, \theta(t) \text{and} \, f(t) \, \text{satisfying:} \\
-m \ddot{x}(\theta) & = f x(\theta)/L \\
-m \ddot{y}(\theta) & = f y(\theta)/L + m g \\
-\end{align}
-
-In this example, this lets us collapse the problem into a
-single-component Ordinary Differential Equation.
-
-The manifold for this simple problem is smooth, so two nested
-polynomials forms the autoencoder:
-
-\[\left\{\begin{array}{c} x\\y\end{array}\right\}
-\rightarrow W^1 x^n \rightarrow q \rightarrow W^2 x^n \rightarrow 
-\left\{\begin{array}{c} x\\y\end{array}\right\}\]
-
-(We explicitly write the bias \(+b\); it is equivalent to including
-\(x^0=1\) in the polynomial set.) The Lagrangian for the pendulum is
-
+above), penalties, change of variables, etc. The change of variables
+method exploits the Lagrangian mechanics formulation, where we state
+the Lagrangian,
 \begin{equation}
 L = \frac{1}{2}m\left(\dot{x}^2 + \dot{y}^2\right) - m g y
 \end{equation}
+with the constraint that \(x\) and \(y\) lie on the path.
+We can introduce a new variable \(\theta\) that parameterizes
+\(x=R\cos\theta\) and \(y=R\sin\theta\) and rederive the equations of
+motion with the familiar,
+\begin{align}
+\text{Solve for}\, \theta(t) \ \text{satisfying:} \\
+\frac{\mathrm{d}}{\mathrm{d}t} \frac{\partial L}{\partial
+  \dot{\theta}} =
+  \frac{\partial L}{\partial \theta}
+\end{align}
+In this example, this lets us collapse the problem into a
+single-component second-roder differential equation.
 
-with the constraint that \(x\) and \(y\) lie on the path. The equations
+In our methodology, we do not have an explicit equation for the
+constraint, but a dataset of $X$ of $(x,y)$ pairs that are on the manifold. For
+our proof-of-concept test, we manufacture this data for the circular
+pendulum to verify against the analytical solution:
+\begin{equation}
+X = \left\{ (R\cos\theta_i, R\sin\theta_i)\; | \;\theta_i \in [-5\pi/4,\pi/4] \right\}
+\end{equation}
+We also try a ``goofier'' looking curve with no known closed form
+solution to exercise the methodology,
+
+(For the equation of state problem, this is analogous to the dataset
+of $p,T,\rho,h$ 4-tuples that make the plot in Figure \ref{fig:pTrho}.)
+
+The manifold for this simple problem is smooth, so two nested
+polynomials forms the autoencoder:
+\[\left\{\begin{array}{c} x\\y\end{array}\right\}
+\rightarrow W_{enc} x^n \rightarrow q \rightarrow W_{dec} x^n \rightarrow 
+\left\{\begin{array}{c} x\\y\end{array}\right\}\]
+
+(We explicitly write the bias \(+b\); it is equivalent to including
+\(x^0=1\) in the polynomial set.)
+The equations
 of motion given some parameter space that satisfies the constraint is
 
 \begin{equation}
