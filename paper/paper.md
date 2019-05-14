@@ -62,7 +62,7 @@ $$
 
 We also consider the phase equilibria; at a larger scale it is possible for a control volume to be a mixture of two phase coexisting, such as boiling with some mixture saturation $S_{gas}=1-S_{liq}$.
 
-For this preliminary work, we consider only a single-beaker problem without flow. Let $\rho$ be the material density, $T$ be the temperature, $p$ be the material pressure, $h$ be the material enthalpy, and $u$ be the internal energy. There are two equations for balance of mass and energy. 
+For this preliminary work, we consider only a single-beaker problem without flow. Let $\rho$ be the material density, $T$ be the temperature, $p$ be the material pressure, $h$ be the material enthalpy, and $u$ be the internal energy. continuous stirred tank reactor There are two equations for balance of mass and energy. 
 $$
 \begin{align}
 \partial_t \rho & = \mathbf{k}_p(p_\infty - p) + r\\
