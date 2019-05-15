@@ -5,6 +5,9 @@
 \usepackage{lmodern}
 \usepackage{amssymb,amsmath}
 \usepackage{ifxetex,ifluatex}
+\usepackage{chemmacros}
+\usepackage{natbib}
+\usepackage{lineno}
 \usepackage[margin=1in]{geometry}
 \usepackage{fixltx2e} % provides \textsubscript
 \ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
@@ -96,6 +99,30 @@
 \renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
 \fi
 
+
+
+
+% Patch equations to properly generate line numbers for review
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+  \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+  \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+  \renewenvironment{#1}%
+     {\linenomath\csname old#1\endcsname}%
+     {\csname oldend#1\endcsname\endlinenomath}}%
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+  \patchAmsMathEnvironmentForLineno{#1}%
+  \patchAmsMathEnvironmentForLineno{#1*}}%
+\AtBeginDocument{%
+\patchBothAmsMathEnvironmentsForLineno{equation}%
+\patchBothAmsMathEnvironmentsForLineno{align}%
+\patchBothAmsMathEnvironmentsForLineno{flalign}%
+\patchBothAmsMathEnvironmentsForLineno{alignat}%
+\patchBothAmsMathEnvironmentsForLineno{gather}%
+\patchBothAmsMathEnvironmentsForLineno{multline}%
+}
+
+
+
 % set default figure placement to htbp
 \makeatletter
 \def\fps@figure{htbp}
@@ -154,7 +181,7 @@ The system of equations we are looking at are, for only two components,
 More species add more rows, and applicaitons also involve continuum
 mechanics and chemical reactions! The interplay of deformations,
 reactions, and phase transitions makes the equations extremely difficult
-to solve. \cite{my millstone paper}
+to solve. \cite{queiruga2018millstone}
 
 This work only considers the "single beaker" problem; the flow
 and transport aspects have similar challenges. (The next stage of this
@@ -187,7 +214,8 @@ z(q,\partial_t q)=0
 
 
 
-
+ \cite{wu_physics-informed_2018}
+\cite{xie_tempogan:_2018}
 
 Part of the new modern software engineering framework involves replacing
 human-written code with computer-written code. We are applying this
@@ -677,7 +705,7 @@ of 1. The random initialization part is decided by
 \hypertarget{header-n3321}{%
 \section{Simulation}\label{header-n3321}}
 
-Solve for \(q_1(t)\) and \(q_2(t)\) such that:
+With the trained model, we solve for \(q_1(t)\) and \(q_2(t)\) such that:
 
 \begin{align}
 \partial_t \rho(q_1,q_2) & = \nabla \cdot \mathbf{k} \nabla p(q_1,q_2) + r \\
@@ -702,8 +730,8 @@ Using the autoencoder to automatically remove the local constraint:
 eos(D(q_1,q_2)) = 0 \, \forall \,q_1,q_2
 \end{equation}
 
-\textbf{Only training the material representation, not the balance
-laws.}
+Only training the material representation, not the balance
+laws.
 
 First, we had a constrained DAE:
 
@@ -714,7 +742,7 @@ eos(T,p,\rho,h) &= 0
 
 with no good representation of \(eos\) everywhere.
 
-The autoencoder parameterizes the constraint :
+The decoder part of the network is inserted into the balance law
 
 \begin{equation}
 \frac{\mathrm{d}}{\mathrm{d}t} m(D(q)) = r(D(q))
@@ -925,7 +953,7 @@ decode s[i] = D(q[i])
 \hypertarget{header-n3356}{%
 \section{Implementation}\label{header-n3356}}
 
-The training framework and simulations are implemented in TensorFlow
+The training framework and simulations are implemented in TensorFlow 
 using custom defined operations. The various visualizations are built
 using Matplotlib, Plotly, and Visdom. The accompanying video was
 generated using Paraview.
@@ -1066,11 +1094,20 @@ The simulation inputs are the name of the equation of state, .e.g,
 hyperparameters, e.g. ``Classifying\_pT\_1.0\_1,3,6,12,Sigmoid''.
 In a mature code, the name of the architecture loaded would be hidden
 from the end-user and would be a setting which the doman scientist and developer freezes
-after checking the training process. 
+after checking the training process.
+
+Technique ssuch as L1 regularization would be needed to search for low
+cost models that also satisfy our desire for Occam's razor
+simplifications. (The IAPWS relations used a prelimary form of this
+type of simplification, but are not optimal in the author's opinion.)
 
 A fully automated testing system can verify which realizations worked
 (relate this to an independent review board comparing the results the
 independently developed codes) and then select the fastest and most
 robust one.
+
+
+\bibliographystyle{plainnat}
+\bibliography{zotero}
 
 \end{document}
