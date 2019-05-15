@@ -1,6 +1,6 @@
 from __future__ import print_function
 import sys,inspect
-import iapws97
+from equations_of_state import iapws97
 
 class Linear_Liquid():
     t_max = 1.0
@@ -64,6 +64,28 @@ class Transition_L2G():
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=350,p_inf=5.0e3)
+    answer = dict(T=350,p=5.0e3,
+        rho= iapws97.density_region2(350.0,5.0e3),
+        h  =iapws97.enthalpy_region2(350.0,5.0e3) )
+    
+class Transition_L2G_Drain():
+    t_max = 10.0
+    initial = dict(T=350,p=5.0e5, phase="Liquid")
+    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    @staticmethod
+    def schedule(sim,t):
+        pass
+    answer = dict(T=350,p=5.0e3,
+        rho= iapws97.density_region2(350.0,5.0e3),
+        h  =iapws97.enthalpy_region2(350.0,5.0e3) )
+    
+class Liquid_Drain():
+    t_max = 2000.0
+    initial = dict(T=373.0,p=3.0e5, phase="Liquid")
+    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    @staticmethod
+    def schedule(sim,t):
+        pass
     answer = dict(T=350,p=5.0e3,
         rho= iapws97.density_region2(350.0,5.0e3),
         h  =iapws97.enthalpy_region2(350.0,5.0e3) )
