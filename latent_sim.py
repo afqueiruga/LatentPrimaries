@@ -84,8 +84,8 @@ class LatentSim():
             None: s0_none,
             "Gas": np.array([[450,1.0e2, 0.00048149,2835269.40]]),
             "Liquid": np.array([[350,1.0e7,978.09,329726.06]]),
-            "Solid": np.array([[250,1.0e5,919.87,-379930.33]]),
-            "Supercritical": np.array([[900,132167913.14,900,2964049.86]])
+#             "Solid": np.array([[250,1.0e5,919.87,-379930.33]]),
+#             "Supercritical": np.array([[900,132167913.14,900,2964049.86]])
         }
         # One guess:
 #         s0 = guesses[phase]
@@ -205,9 +205,10 @@ class LatentSim():
         
         m = tf.concat([rho,
                        rho*h-p],axis=-1)
+        mflux = k_p*(p_inf-p)+mass_source
         rate = tf.concat([
-            k_p*(p_inf-p)+mass_source,
-            k_T*(T_inf-T)+heat_source],axis=-1)
+            mflux,
+            h*mflux + k_T*(T_inf-T)+heat_source],axis=-1)
         return m, rate
     
     def set_params(self, **kwargs):
@@ -215,7 +216,7 @@ class LatentSim():
         for k,v in kwargs.items():
             self._vars[k].load(v,self._sess)
     
-    def solve_a_time_step(self, q0):
+    def solve_a_time_step(self, q0, under_relax=0.1):
         """Solve one timestep. Note that LatentSim is stateless in this 
         regard."""
         qi = q0.copy()
@@ -227,7 +228,8 @@ class LatentSim():
             nDq = np.linalg.norm(Dq)
             if nDq<1.0e-14: 
                 break # It might be 0, we're done
-            step = min(0.001/nDq,1.0)*Dq
+            # step = min(0.001/nDq,1.0)*Dq
+            step = under_relax*Dq
             # TODO line search
             qi[:] += step
             if nDq<2.0e-7: break
