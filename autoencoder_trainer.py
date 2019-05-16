@@ -94,7 +94,11 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         loghook = tf.train.SummarySaverHook(
             summary_op=[tf.summary.scalar("goaltrain",ae.goal_all),
                         tf.summary.scalar("goaltest",ae.goal_test)],
-            save_steps=25,output_dir=training_dir)
+            save_steps=1,output_dir=training_dir)
+        # Print to screen hook
+        @DoStuffHook(freq=1)
+        def printgoalhook(ctx,run_values):
+            print(ctx.session.run(ae.goal_all))
         stophook = tf.train.StopAtStepHook(num_steps=n_epoch)
         saverhook = SaveAtEndHook(training_dir+"/final_variables")
         # Make a closure into a hook
@@ -104,7 +108,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
             onum_val = onum.eval(session=ctx.session)
             onum_val+=1
             onum.load(onum_val, session=ctx.session)
-            print(ae.goal.eval(session=ctx.session))
+            print("extra:",ae.goal.eval(session=ctx.session))
             header="T, p, rho, h"
             ae.save_fit(training_dir+"/surf_{0}.csv".format(onum_val),
                         header,sess=ctx.session)
@@ -113,16 +117,21 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         def newthook(ctx,run_values):
             # Now do the Hessian step on the last layer
             print("Running the newton step")
-            for i in range(5):
+            for i in range(1):
+                print("newt:",ctx.session.run(ae.goal_all))
                 ctx.session.run(ae.newt_step)
+            print("newt:",ctx.session.run(ae.goal_all))
+
         # set up the session
         session = tf.train.MonitoredTrainingSession(
             checkpoint_dir=training_dir,
-            hooks=[loghook,stophook,saverhook,extrahook,newthook])
+            hooks=[loghook,printgoalhook,saverhook,extrahook,newthook,stophook])
         # train away
         with session as sess:
             # Do the SGD rounds
             while not sess.should_stop():
+                print("loop:",sess.run(ae.goal_all))
                 sess.run(ae.train_step)
+                
 
     
