@@ -437,10 +437,10 @@ constraint:
 
 \begin{align}
 \text{Solve for}\, \rho(t), \, h(t), \, p(t),\, \text{and}\, T(t)\, \text{satisfying:}\\
-\partial_t \rho & = \nabla \cdot \mathbf{k}\nabla p + r\\
-\partial_t \rho h - p & = \nabla \cdot \mathbf{k'}\nabla T + s\\
+\partial_t \rho &  = \mathbf{k}_p(p_\infty - p) + r\\
+\partial_t (\rho h-p) & = \mathbf{k}_T(T_\infty-T) + s \\
 \text{such that they lie on the material EOS,}\\
-EOS(\rho,h,p,T) & = 0
+\rho,h,p,T & \in \{\text{EOS}\}
 \end{align}
 
 The \emph{ground truth} is the experimental data in the first place; the
@@ -518,36 +518,23 @@ of motion given some parameter space that satisfies the constraint is
 We'll use the autoencoder to generate the parameterization of \(x(q)\)
 and \(y(q)\). By the chain rule, the velocities are related to the
 feature space by
-
 \begin{equation}
 \dot{x} = \frac{\mathrm{d}x(q)}{\mathrm{d}t} = \frac{\partial x}{\partial q}\frac{\mathrm{d}q}{\mathrm{d}t}
 \end{equation}
-
 and similarly for the \(y\) direction.
-
-Taking the partial derivatives with respect to the feature variable and
-its rate, the components to the equation of motion are
-
-\begin{equation}
-\frac{\partial L}{\partial q} = m g \frac{\partial y}{\partial q}
-\end{equation}
 
 When we want to solve the dynamics, we can treat the autoencoder the
 same as \(x(\theta)\), plugging in
-
 \[L(x(q),v(q,\dot{q}))\]
-
-and build the DAE we know from physics:
+Taking the partial derivatives with respect to the feature variable and
+its rate, the components to the equation of motion are build the DAE we know from physics:
 
 \[\frac{\mathrm{d}}{\mathrm{d}t}\frac{\partial L}{\partial \dot{q}} = \frac{\partial L}{\partial q}\]
-
 where we get the velocity with the chain rule:
-
 \[v = \frac{\partial x}{\partial q} \dot{q}\]
 
 Then plug it into a Runge Kutta (trapezoidal) to solve with Newton's
 method:
-
 \[\frac{\partial L}{\partial \dot{q}}_i - \Delta t \frac{\partial L}{\partial q}_i = \frac{\partial L}{\partial \dot{q}}_0 + \Delta t \frac{\partial L}{\partial q}_0\]
 
 \begin{figure}
