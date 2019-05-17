@@ -130,8 +130,8 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         with session as sess:
             # Do the SGD rounds
             while not sess.should_stop():
-                print("loop:",sess.run(ae.goal_all))
-                sess.run(ae.train_step)
+                print("loop:",sess.run([ae.goal_all,ae.train_step]))
+
                 
 
     
