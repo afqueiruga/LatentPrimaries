@@ -111,10 +111,10 @@ class LatentSim():
                 raise RuntimeError("LatentSim: You specified too many variables.")
             idcs = np.array(idcs, dtype=np.intc)
             try:
-                s = self._find_point(s0, idcs, 
+                q,s = self._find_point(s0, idcs, 
                                     under_relax=under_relax,
                                     verbose=verbose)
-                ss.append(s)
+                ss.append((q,s))
             except RuntimeError as e:
                 pass
         if len(ss)==0:
@@ -122,13 +122,15 @@ class LatentSim():
             raise RuntimeError("None of the initial guesses converged!")
         dist_closest = 1.0e10
         s_closest = ss[0]
-        for s_found in ss:
+        q_closest = q[0]
+        for q,s_found in ss:
             dist = np.linalg.norm([ 
                 (s_found[0,c]-s0[0,c])/s0[0,c] 
                 for c in idcs])
             if dist < dist_closest:
                 s_closest = s_found
-        return s_closest
+                q_closest = q
+        return q_closest
     
     def _find_point(self, s0, idcs, under_relax=0.1,verbose=False):
         # Initial guess for q. TODO: Where should it be?
@@ -162,7 +164,7 @@ class LatentSim():
                 print("Found point at ", s_found, " after ",i,
                       " iterations, But that point was far away.")
             raise RuntimeError("Couldn't find point")
-        return q0
+        return q0, self.decode(q0)
     
     def build_dae(self, method='BWEuler'):
         """Builds the differential algebraic equation and sets up the system
