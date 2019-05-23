@@ -77,6 +77,9 @@ class Autoencoder(object):
         opt = tf.train.AdamOptimizer(1e-2)
         loss = self.make_goal(data)
         ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step())
+        self.sgd_opt = opt
+        self.sgd_step = ts
+        self.sgd_reset = tf.variables_initializer(opt.variables())
         return ts
     
     def _get_hess_vars(self):

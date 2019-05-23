@@ -94,7 +94,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         loghook = tf.train.SummarySaverHook(
             summary_op=[tf.summary.scalar("goaltrain",ae.goal_all),
                         tf.summary.scalar("goaltest",ae.goal_test)],
-            save_steps=1,output_dir=training_dir)
+            save_steps=100,output_dir=training_dir)
         # Print to screen hook
         @DoStuffHook(freq=1)
         def printgoalhook(ctx,run_values):
@@ -121,17 +121,18 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                 print("newt:",ctx.session.run(ae.goal_all))
                 ctx.session.run(ae.newt_step)
             print("newt:",ctx.session.run(ae.goal_all))
+            ctx.session.run(ae.sgd_reset)
 
         # set up the session
         session = tf.train.MonitoredTrainingSession(
             checkpoint_dir=training_dir,
-            hooks=[loghook,printgoalhook,saverhook,extrahook,newthook,stophook])
+            hooks=[loghook,printgoalhook,saverhook,extrahook,
+                   newthook,
+                   stophook])
         # train away
         with session as sess:
             # Do the SGD rounds
             while not sess.should_stop():
                 print("loop:",sess.run([ae.goal_all,ae.train_step]))
 
-                
 
-    
