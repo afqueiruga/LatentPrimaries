@@ -157,13 +157,13 @@ class LatentSim():
                 break
         s_found = self.decode(q0)
         
-        if np.linalg.norm([ 
-            (s_found[0,c]-s0[0,c])/s0[0,c] 
-            for c in idcs]) > 0.0001:
-            if verbose: 
-                print("Found point at ", s_found, " after ",i,
-                      " iterations, But that point was far away.")
-            raise RuntimeError("Couldn't find point")
+#         if np.linalg.norm([ 
+#             (s_found[0,c]-s0[0,c])/s0[0,c] 
+#             for c in idcs]) > 0.0001:
+#             if verbose: 
+#                 print("Found point at ", s_found, " after ",i,
+#                       " iterations, But that point was far away.")
+#             raise RuntimeError("Couldn't find point")
         return q0, self.decode(q0)
     
     def build_dae(self, method='BWEuler'):
