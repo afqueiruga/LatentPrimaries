@@ -54,7 +54,7 @@ class DoStuffHook(tf.train.SessionRunHook):
         return self
     
 def train_autoencoder(name, dataname, outerdim, innerdim, 
-                      hyper=default_hyper,
+                          hyper=default_hyper,
                       training_dir='',data_dir='',n_epoch=5000, image_freq=1500):
     
     hyperpath = string_identifier(hyper)
@@ -113,26 +113,40 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
             ae.save_fit(training_dir+"/surf_{0}.csv".format(onum_val),
                         header,sess=ctx.session)
         # Do hessian steps here and there
+        def newtstep(sess):
+            print("Running the newton step")
+            for i in range(1):
+                print("newt:",sess.run(ae.goal_all) )
+                for v in ae._get_hess_vars():
+                    print(sess.run(v))
+                sess.run(ae.newt_step)
+            print("newt:",sess.run([ae.goal_all]) )
+            for v in ae._get_hess_vars():
+                print(sess.run(v))
+            sess.run(ae.sgd_reset)
         @DoStuffHook(freq=n_epoch/2)
         def newthook(ctx,run_values):
             # Now do the Hessian step on the last layer
-            print("Running the newton step")
-            for i in range(1):
-                print("newt:",ctx.session.run(ae.goal_all))
-                ctx.session.run(ae.newt_step)
-            print("newt:",ctx.session.run(ae.goal_all))
-            ctx.session.run(ae.sgd_reset)
+            newtstep(ctx.session)
 
         # set up the session
+        # replace with MonitoredSession with manually crafted
+        # checkpointhook
         session = tf.train.MonitoredTrainingSession(
             checkpoint_dir=training_dir,
-            hooks=[loghook,printgoalhook,saverhook,extrahook,
-                   newthook,
+            hooks=[loghook,saverhook,extrahook,
+                   #newthook,
                    stophook])
         # train away
         with session as sess:
             # Do the SGD rounds
+            i=0
             while not sess.should_stop():
-                print("loop:",sess.run([ae.goal_all,ae.train_step]))
+                if i%(n_epoch/2)==n_epoch/2-1:
+                    newtstep(sess)
+                else:
+                    print("loop:",sess.run([ae.goal_all,ae.train_step]
+                                       +list(ae._get_hess_vars())) )
+                i+=1
 
 

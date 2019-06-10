@@ -74,12 +74,23 @@ class Autoencoder(object):
             return loss
 
     def _make_train_step(self, data):
-        opt = tf.train.AdamOptimizer(1e-2)
+#         opt = tf.train.AdamOptimizer(1e-2)
+#         opt = tf.train.GradientDescentOptimizer(1e-3)
+        opt = tf.train.RMSPropOptimizer(1e-2)
         loss = self.make_goal(data)
-        ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step())
+        var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step(),var_list=var_list)
         self.sgd_opt = opt
         self.sgd_step = ts
-        self.sgd_reset = tf.variables_initializer(opt.variables())
+        opt_vars = [opt.get_slot(var, name) for name in opt.get_slot_names() for var in var_list]
+        try:
+            opt_vars += opt._get_beta_accumulators() # only for adam
+        except AttributeError:
+            print("Wasn't ADAM")
+            pass
+        opt_vars = [ v for v in opt_vars if isinstance(v, tf.Variable) ]
+        print(opt_vars)
+        self.sgd_reset = tf.variables_initializer(opt_vars)
         return ts
     
     def _get_hess_vars(self):
