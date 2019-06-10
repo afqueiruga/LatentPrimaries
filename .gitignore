@@ -2,6 +2,7 @@
 *~
 *html
 *csv
+*npy
 .DS_Store
 .ipynb_checkpoints
 
@@ -9,4 +10,6 @@
 *.log
 *.out
 *.synctex.gz
+*.bbl
+*.blg
 _region_*
