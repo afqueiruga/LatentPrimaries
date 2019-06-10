@@ -1,0 +1,25 @@
+digraph {
+    start[shape="oval"];
+
+    load_graph[shape="box",label="Load model file"];
+    read_initial[shape="box",label="Read inputs"];
+    if_initial[shape="diamond",label="Can they compress?\ns=E(D(S))?"];
+    
+    t_start[shape="oval",label="While t<t_end"];
+    newton_start[shape="diamond",label="Newton's method"];
+    solve_K[shape="box", label="\Delta q = K\R"];
+    //newton_end[sha "|\Delta q|<tol"]
+    decompress[shape="box",label="x(t) = D(q(t))"];
+    end[shape="oval"];
+    
+    start -> load_graph -> read_initial -> if_initial;
+    
+    if_initial -> error_initial [label="no"];
+    if_initial -> t_start [label="yes"];
+    
+    t_start -> newton_start -> solve_K ;
+    solve_K -> newton_start[label = "$|\Delta q|>tol$"];
+    solve_K -> decompress [label = "$|\Delta q|<tol$"];
+    decompress-> end [label="done"];
+    decompress-> t_start [label="continue"];
+}
