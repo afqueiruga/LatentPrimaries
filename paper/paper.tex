@@ -88,7 +88,7 @@
 \setlength{\emergencystretch}{3em}  % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\setcounter{secnumdepth}{0}
+%\setcounter{secnumdepth}{0}
 % Redefines (sub)paragraphs to behave more like sections
 \ifx\paragraph\undefined\else
 \let\oldparagraph\paragraph
@@ -137,7 +137,12 @@ on the Latent Space of an Autoencoder}
 \begin{document}
 \maketitle
 \begin{abstract}
-Multiphase simulation is hard.
+  Multiphase simulation is hard.
+
+Our
+proposed method is motivated by the problems of multiphase reaction and
+transport, where the underlying constraints are the ill-behaved material
+properties which are difficult to describe.
   
 Our proposed approach is to build upon modern machine learning
 techniques to aid in equation discovery. An autoencoder is trained on
@@ -190,7 +195,7 @@ The system of equations we are looking at are, for only two components,
 \begin{align}
   \partial_t \rho_{H_2O} =& \nabla \cdot F_{H_2O} + s \\
   \partial_t \rho_{CO_2} =& \nabla \cdot F_{CO_2} + s \\
-  \partial_t e& = \nabla \cdot F_{heat} + s
+  \partial_t e =& \nabla \cdot F_{heat} + s
 \end{align}
 More species add more balance laws (rows of equations). The applications also involve continuum
 mechanics and chemical reactions, which are not considered. The interplay of deformations,
@@ -219,6 +224,8 @@ This work only considers the "single beaker" problem; the flow
 and transport aspects have similar challenges. (The next stage of this
 work will "connect the beakers".)
 
+
+
 We redescribe our problem as a differential algebraic equation
 with a constraint: the balances of mass and energy are constrained by
 the EOS. We can cast the above equation into a basic form for a
@@ -227,10 +234,10 @@ differential algebraic equation,
   z( u, \partial_t u) &= 0 \\
   c(u) & = 0
 \end{align}
-where $u=\{T,p,\rho,h\}$. We will introduce a new way of thinking about constraints as sets of
+where, for the equation above, the variable is $u=\{T,p,\rho,h\}$. We will introduce a new way of thinking about constraints as sets of
 solutions or observations of possible $u$:
 \begin{equation}
-c(u)=0 \leftrightarrow \left\{ u | c(u)=0 \;\text{or}\; u\; \text{observed} \right\}
+c(u)=0 \longleftrightarrow \left\{ u | c(u)=0 \;\text{or}\; u\; \text{observed} \right\}
 \end{equation}
 This maps directly to the original experimental procedure for
 determining a constraint equation.
@@ -618,28 +625,13 @@ Soltutions are shown in Figure \ref{fig:pendulum}.
 Reparameterization}\label{header-n3294}}
 
 The central idea of this work is to obtain two new variables solve for
-those directly,
-
-\begin{align}
-\text{Solve for}\, u(t)\, \text{and}\, v(t)\, \text{such that:}\\
-\partial_t \rho(u,v) & = \nabla \cdot \mathbf{k} \nabla p(u,v) + r \\
-\partial_t \rho e(u,v) & = \nabla \cdot \mathbf{k'}\nabla T(u,v) + s
-\end{align}
-
-where \(u\) and \(v\) have no physical meaning other than simply being a
-parameterization of the equation of state constraint. We want to select
-\(u\) and \(v\) to require no auxilary phase index to define the system
+those directly which have no physical meaning other than simply being a
+parameterization of the equation of state constraint. We want to select a
+\(q_1\) and \(q_2\) to require no auxilary phase index to define the system
 and no additional logic in the code. The sharp kinks and possible
 discontinuities can be a part of the functions
-\(\rho(u,v), p(u,v), e(u,v)\) and \(T(u,v)\).
+\(\rho(q_1, q_2), p(q_1, q_2), h(q_1, q_2)\) and \(T(q_1, q_2)\).
 
-Can we automatically discover this parameterization? (For a such a
-simple equation, we do not think the proposed methodology will be
-better, but the pendulum will instead be our \emph{unit test}.) Our
-proposed method is motivated by the problems of multiphase reaction and
-transport, where the underlying constraints are the ill-behaved material
-properties which are difficult to describe. We change our perspective on
-these problems in the next section.
 
 \hypertarget{header-n3299}{%
 \subsection{Latent Space}\label{header-n3299}}
@@ -649,11 +641,15 @@ determining curve fits by hand, we rephrase the problem of representing
 the equation of state by learning and autoencoder. We have an encoding
 phase, \(E(\rho,p,e,T; a)\) and a decoding phase, \(D(u,v; b)\) that
 forms an identity function with a compressed subspace:
-
 \begin{equation}
-\left\{ \rho, p, e, T \right\} \rightarrow  E \rightarrow \left\{ u,v \right\} \rightarrow D \rightarrow \left\{ \rho, p, e, T \right\}
+\left\{ \begin{array}{c}
+T\\ p\\ \rho\\ h
+\end{array}\right\} \rightarrow  E \rightarrow 
+\left\{ \begin{array}{c} q_1\\q_2 \end{array} \right\}\rightarrow D \rightarrow 
+\left\{ \begin{array}{c}
+T\\ p\\ \rho\\ h
+\end{array}\right\}
 \end{equation}
-
 The autoencoder is solved for by optimizing its parameters using the
 goal
 
@@ -712,7 +708,7 @@ and solving the linear system for an update to the last parameters.
 \[[\mathbf{H}] \Delta W^{dec} = -\{\mathbf{G}\}\]
 
 To form the hessian and gradient for this step, we sum over all of the
-training data. (The contractive penalty term drops out because it does
+training data. (The contractive penalty term drops out of the this step because it does
 not depend on \(W^{dec}\).)
 
 In future work, we would want to continue appending new \(q\)s in a
@@ -728,8 +724,8 @@ variables, but as discussed above, the equations of state are not
 analytic for any choice. (Indeed, this idea first spawned when the
 author was thinking about systematically rewriting equations in
 \(\rho,h\).) Ideally, this system would be fully automated, but due to
-the nonlinearilty of the autoencoder problem there are many "bad"
-options the trainer can fall into. Multiple starts are possibly needed
+the nonlinearilty of the autoencoder problem there are many poor local minima.
+Multiple starts are possibly needed
 to get a good solution when starting from purely randomized newtork
 parameters. Global optimization is truly a necessity when trying to
 optimize networks with so few parameters. We incorporate a little bit of
@@ -752,34 +748,40 @@ of 1. The random initialization part is decided by
 \hypertarget{header-n3317}{%
 \subsection{Unsupervised Phase Classification}\label{header-n3317}}
 
+The architecture, illustrated in Figure \ref{fig:classifyingnetwork}, has the form:
+\begin{align}
+  q &= W_{enc} x^n + b_{enc}\\
+  f &= W_{dec} q^m + b_{dec} \\
+  h &= \sigma\left(W_{bound}q^m+b_{bound}\right) \\
+  p &= \text{softmax}\left(W_{phase}q^m+b_{bound[phase}\right) \\
+  \bar{x}&= f * p
+\end{align}
+
 \begin{figure}
 \centering
 \includegraphics{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/classifier_network.png}
-\caption{The architecture of the classifier network designed for
+\caption{\label{fig:classifyingnetwork}The architecture of the classifier network designed for
   unsupervised labeling of phases.}
 \end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/classifier_good.jpg}
+  \caption{\label{fig:classified}Result of the unsupervised phase classifier. Compare this plot to the original labeled dataset Figure \ref{fig:pTrho}.}
+\end{figure}
+Because the identity of the phases,
+For comparison purposes, we group together liquid-gas-supercritical as one contiguous label.
 
 \hypertarget{header-n3321}{%
 \section{Simulation}\label{header-n3321}}
 
 With the trained model, we solve for \(q_1(t)\) and \(q_2(t)\) such that:
-
 \begin{align}
 \partial_t \rho(q_1,q_2) & = \nabla \cdot \mathbf{k} \nabla p(q_1,q_2) + r \\
 \partial_t \rho h(q_1,q_2)-p & = \nabla \cdot \mathbf{k'}\nabla T(q_1,q_2) + s
 \end{align}
-
 where \(\rho(q_1,q_2)\) etc. are the back of an autoencoder:
 
-\begin{equation}
-\left\{ \begin{array}{c}
-T\\ p\\ \rho\\ h
-\end{array}\right\} \rightarrow  E \rightarrow 
-\left\{ \begin{array}{c} q_1\\q_2 \end{array} \right\}\rightarrow D \rightarrow 
-\left\{ \begin{array}{c}
-T\\ p\\ \rho\\ h
-\end{array}\right\}
-\end{equation}
 
 Using the autoencoder to automatically remove the local constraint:
 
@@ -791,13 +793,18 @@ Only training the material representation, not the balance
 laws.
 
 First, we had a constrained DAE:
-
 \begin{align}
 \frac{\mathrm{d}}{\mathrm{d}t} m(T,p,\rho,h) &= r(T,p,\rho,h)\\
 eos(T,p,\rho,h) &= 0
 \end{align}
+where $m=\{\rho,\rho h -p\}$ and $r$ is the right hand side, with no good representation of \(eos\) everywhere.
 
-with no good representation of \(eos\) everywhere.
+We obtain four new functions with two unknowns. We're actually solving the manifold of Figure X.
+\begin{figure}
+  \centering
+  \includegraphics{../slides/water_four_surfaces_plot.png}
+  \caption{\label{fig:foursurfaces}The four 2D surfaces that make up the new parameterization. The learned surface captures the sharp kinks and vertical fronts in Figure \ref{fig:classifyingresult}, but is ananalytic and smooth function of the two learned unknowns.}
+  \end{figure}
 
 The decoder part of the network is inserted into the balance law
 
@@ -809,24 +816,28 @@ We can parameterize this equation with any time stepping scheme, .e.g. a
 Runge-Kutta scheme. For subsurface flow, backward Euler is popular due
 to its simplicity and L-stability, which we follow since the topic of
 this paper is not exploring new time stepping schemes. This yields the
-discretizated algebraic equation for \(q_i\) at \(t+\Delta t\) given the
+discretizated algebraic equation for \(q_i\) and \(t+\Delta t\) given the
 value \(q^0\) at \(t\),
 
 \begin{equation}
 0 = R(q^i) = m(q^{i}) - m(q^{0}) - \Delta t \, r(q^i)
 \end{equation}
-
-where we have called the quation \(R(q)\). By design \(R(q)\) is smooth
+where we have called the equation \(R(q)\). By design \(R(q)\) is smooth
 enough to solve with Newton's method without any statemachine logic:
-
 \begin{equation}
-\frac{\partial R}{\partial q} \Delta q^{k+1} = R(q^k)
+\frac{\partial R}{\partial q} \Delta q^{k+1} = - R(q^k)
 \end{equation}
+with the update
+\begin{equation}
+q^{k+1} = q^k + \alpha\Delta q^{k+1}
+\end{equation}
+where $\alpha$ is an under relaxation parameter.
+
 This equation is deceptively simple: the function \(R(q)\) has complex logic encoded in it; if-then
 statements appear if the model used activations such as rectifiers.
 However, the complex material behavior which traditionally requires
 the vast majority of programming was implemented automatically by the
-models; implementing equations XX, XX, and XX require only a few lines
+models; implementing equations XX, XX, and XX requires only a few lines
 of human-written code. 
 
 \hypertarget{header-n3339}{%
@@ -840,10 +851,10 @@ depend on the parameterization. The user needs to be able to specify the
 
 Since the original manifold is 2D, the user only needs to specify two
 initial values. In a multiphase solver such as TOUGH, the state needs
-to be specified with the two primary variables plus the state tag: 
+to be specified with the two primary variables plus the state tag (sans input file formatting): 
 \begin{verbatim}
-9e5 20 Aqu
-0.5 20 AqG
+    9e5 20 Aqu
+    0.5 20 AqG
 \end{verbatim}
 Note that the first primary variable means pressure in the first line
 for a pure-liquid state,
@@ -860,8 +871,8 @@ the $T p \rho h$ space instead of the $q$ space.
 The user (or test problem) specifies any two of the four values in a
 dictionary format,
 \begin{verbatim}
-p=9e5 T=20
-rho=500 T=20
+    p=9e5 T=20
+    rho=500 T=20
 \end{verbatim}
 Then, the simulator must determine $q(t=0)$ from these two
 values. This sets up a system of two equations.
@@ -877,9 +888,13 @@ with Newton's method. The two corresponding rows are cut out of
 the tangent matrix to $D$,
 \[K_{ij} = \frac{\partial D_i}{\partial q_j}  \quad \text{for specified}\; i, \text{for}\;j=1,2\]
 and the following system of equations is solved for an update to $q$,
-\[K\Delta q = s^0_i-D(q)_i\]
-Updating $q$ is repeated until convergence.
-
+\[K_{ij}\Delta q_j = s^0_i-D(q)_i\]
+The iteration u $q$ is repeated until convergence, with under-relaxation used again to update
+ \begin{equation}
+q^0_{k+1} =q^0_{k} + \alpha \Delta q_{k}
+\end{equation}
+with the under-relaxation parameter usually set to $\alpha \approx
+0.1$.
 The initial condition problem is not gaurunteed to converge, however,
 and often does not.
 For example, if the initial guess was in the liquid phase and the target point
@@ -923,13 +938,7 @@ p^*(0)\\
 \end{array}\right);\quad q^0_{guess}=E\left(s^0\right)
  \end{equation}
  These sets of $q^0_{guess}$ are then iterated upon using the Newton's
- method procedure. We further add
- under-relaxation to the iteration,
- \begin{equation}
-q^0_{k+1} =q^0_{k} + \alpha \Delta q_{k}
-\end{equation}
-with the under relaxation parameter usually set to $\alpha \approx
-0.1$.
+ method procedure. 
 
  It is further possible that none of the initial guesses for this iteration
 converge. There are two possiblities: the target state point is
@@ -1021,7 +1030,7 @@ author reuses in various TensorFlow-based projects are factored out in
 the dully-named \url{https://github.com/afqueiruga/afqstensorflowutils}.
 The implementation of the empirical equations of state for water are
 factored out at
-\href{https://github.com/afqueiruga/equations_of_state}{https://github.com/afqueiruga/equations\emph{of}state}.
+\href{https://github.com/afqueiruga/equations_of_state}{https://github.com/afqueiruga/equations\_of\_state}.
 
 \hypertarget{header-n3359}{%
 \section{Simulation Evaluation}\label{header-n3359}}
@@ -1068,8 +1077,16 @@ Three different extents:
 \end{enumerate}
 
 \hypertarget{header-n3418}{%
-\subsection{Benchmarks}\label{header-n3418}}
+\subsection{Validation and Testing}\label{header-n3418}}
 
+The verification problems are listed in Table \ref{tab:problems}.
+\begin{table}
+  \caption{\label{tag:problems}Enumeration of the problems used to test and evaluate each fo the generaed architectures}
+\begin{tabular}{l|c|c|c}
+  Name & start & path & end\\
+\hline
+\end{tabular}
+\end{table}
 The simulator was benchmarke against the long standing TOUGH+ multiphase
 multicomponent
 
@@ -1082,6 +1099,7 @@ supercritical states to the existing Fortran simulator would require
 coding of one new logical state with two new state transitions with
 primary variable switches; for the approach of this paper, the dataset
 just needed to be extended.)
+
 
 \hypertarget{header-n3421}{%
 \section{Conclusions}\label{header-n3421}}
@@ -1141,6 +1159,11 @@ of pain-staking trial-and-error labor performed with human "intuition"
 and experience. We did encode a little bit of human intuition into the
 model architectures and tricks for initializing the networks.
 
+We can also think about this work as offline preconditioning.
+
+In TOUGH, for one instance, all of the calculations are performmed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propogation occur, especially because numerical differentiation is used.
+The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically nondimensionalize the entire problem.
+
 The larger simulation code links into the trained database to load the
 computer-written model into the computation graph for the simulation,
 deriving all needed ingredients for the mainloop using automatic
@@ -1153,7 +1176,7 @@ In a mature code, the name of the architecture loaded would be hidden
 from the end-user and would be a setting which the doman scientist and developer freezes
 after checking the training process.
 
-Technique ssuch as L1 regularization would be needed to search for low
+Techniquessuch as L1 regularization would be needed to search for low
 cost models that also satisfy our desire for Occam's razor
 simplifications. (The IAPWS relations used a prelimary form of this
 type of simplification, but are not optimal in the author's opinion.)
