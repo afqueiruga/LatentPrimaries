@@ -75,8 +75,8 @@ class Autoencoder(object):
 
     def _make_train_step(self, data):
 #         opt = tf.train.AdamOptimizer(1e-2)
-#         opt = tf.train.GradientDescentOptimizer(1e-3)
-        opt = tf.train.RMSPropOptimizer(1e-2)
+        opt = tf.train.GradientDescentOptimizer(1e-3)
+#         opt = tf.train.RMSPropOptimizer(1e-2)
         loss = self.make_goal(data)
         var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step(),var_list=var_list)
@@ -100,9 +100,10 @@ class Autoencoder(object):
         
     def _make_hess_train_step(self,data):
         loss = self.make_goal(data)
-        newt = atu.NewtonsMethod(loss, self._get_hess_vars())
-        self.newt_step = newt
-        return newt
+        ops = atu.NewtonsMethod_pieces(loss, self._get_hess_vars())
+        self.newt_ops = ops
+        self.newt_step = ops[0]
+        return self.newt_step
     
     def eval_q(self, i_x):
         return sess.eval( self.o_q, feed_dict={self.i_x:i_x} )
@@ -286,7 +287,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         h_select = tf.tensordot(h_bound,W_select, axes=[-1,0],
                                 name=(name if not self.softmax_it else None))
         if self.softmax_it:
-            h_select = tf.nn.softmax(h_select, name=name)
+            h_select = tf.nn.softmax(h_select)
         return h_select
     
     def decode(self, q, name=None):
@@ -310,4 +311,4 @@ class ClassifyingPolyAutoencoder(Autoencoder):
     def _get_hess_vars(self):
         """These are variables used for the final fitting
         phase."""
-        return (self.vars["dec_W_curve"], self.vars["dec_b_curve"])
+        return (self.vars["dec_W_curve"],)# self.vars["dec_b_curve"])

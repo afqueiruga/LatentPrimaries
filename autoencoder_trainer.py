@@ -98,7 +98,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         # Print to screen hook
         @DoStuffHook(freq=1)
         def printgoalhook(ctx,run_values):
-            print(ctx.session.run(ae.goal_all))
+            print(ctx.sessiormn.run(ae.goal_all))
         stophook = tf.train.StopAtStepHook(num_steps=n_epoch)
         saverhook = SaveAtEndHook(training_dir+"/final_variables")
         # Make a closure into a hook
@@ -119,6 +119,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                 print("newt:",sess.run(ae.goal_all) )
                 for v in ae._get_hess_vars():
                     print(sess.run(v))
+                from IPython import embed ; embed()
                 sess.run(ae.newt_step)
             print("newt:",sess.run([ae.goal_all]) )
             for v in ae._get_hess_vars():
