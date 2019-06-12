@@ -53,13 +53,13 @@ class Autoencoder(object):
         W = self._var( "enc_W", (self.size_q, self.size_x),
                      initial_value=encoder_init_options[self.encoder_init])
         b = self._var( "enc_b", (self.size_q,) )
-        return tf.add(tf.matmul(W,x),b,name=name)
+        return tf.add(tf.matmul(W,x),b)
     
     def decode(self, q, name=None):
         W = self._var( "dec_W", (self.size_x, self.size_q) )
         b = self._var( "dec_b", (self.size_x,) )
         x = tf.matmul(W,q)+b
-        return tf.identity(x,name=name)
+        return tf.identity(x,)
     
     def make_goal(self, data):
         q = self.encode(data)
@@ -112,7 +112,9 @@ class Autoencoder(object):
              initial_value=None):
         try:
             v = self.vars[name]
+            print("Fetching ",name)
         except KeyError:
+            print("Making ",name)
             if not initial_value is None:
                 ini = tf.constant(initial_value,dtype=self.dtype) + tf.truncated_normal(shape=shape,
                        stddev=stddev, dtype=self.dtype)
@@ -188,14 +190,14 @@ class PolyAutoencoder(Autoencoder):
                         initial_value = encoder_init_options[self.encoder_init])
         be1 = self._var("enc_b", (self.size_q,) )
         q = tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
-        return tf.identity(q,name=name)
+        return tf.identity(q)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         We1 = self._var("dec_W", (N_coeff, self.size_x) )
         be1 = self._var("dec_b", (self.size_x,) )
         x = tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
-        return tf.identity(x,name=name)
+        return tf.identity(x)
     
     
 class DeepPolyAutoencoder(Autoencoder):
@@ -225,13 +227,13 @@ class DeepPolyAutoencoder(Autoencoder):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
         nxt = atu.polyexpand(x, self.Np_enc)
         nxt = self._layers(nxt, self.enc_layers + [self.size_q], prefix="enc")
-        return tf.identity(nxt,name=name)
+        return tf.identity(nxt)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         nxt = atu.polyexpand(q, self.Np_dec)
         nxt = self._layers(nxt, self.dec_layers + [self.size_x], prefix="dec")
-        return tf.identity(nxt,name=name)
+        return tf.identity(nxt)
     
     
 class ClassifyingPolyAutoencoder(Autoencoder):
@@ -272,7 +274,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         W = self._var("enc_W", (N_coeff, self.size_q), 
                      initial_value=encoder_init_options[self.encoder_init])
         b = self._var("enc_b", (self.size_q,) )
-        return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b, name=name)
+        return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b)
     
     def classify(self, q, name=None):
         qpoly = atu.polyexpand(q, self.Np_dec)
@@ -284,10 +286,11 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         h_bound = act(tf.tensordot(qpoly,W2,axes=[-1,0])+b2)
         
         W_select = self._var("dec_W_select", (self.N_bound,self.N_curve))
-        h_select = tf.tensordot(h_bound,W_select, axes=[-1,0],
-                                name=(name if not self.softmax_it else None))
+        h_select = tf.tensordot(h_bound,W_select, axes=[-1,0])
         if self.softmax_it:
             h_select = tf.nn.softmax(h_select)
+        else:
+            h_select = tf.onehot(tf.argmax(h_select))
         return h_select
     
     def decode(self, q, name=None):
@@ -301,7 +304,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         h_select = self.classify(q)
         
         x = tf.einsum('ijk,ij->ik',h_curve,h_select)
-        return tf.identity(x,name=name)
+        return x #tf.identity(x)
     
     def _extra_saves(self, ixs,qs, session=None):
         probs = myev(self.o_class,feed_dict={self.i_q:qs},session=session)

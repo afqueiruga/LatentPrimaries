@@ -119,6 +119,13 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                 print("newt:",sess.run(ae.goal_all) )
                 for v in ae._get_hess_vars():
                     print(sess.run(v))
+                x=ae.data.eval(session=sess)
+                W=ae.vars['dec_W_curve'].eval(session=sess)
+                b=ae.vars["dec_b_curve"].eval(session=sess)
+                q = ae.o_q.eval(session=sess,feed_dict={ae.i_x:x[0:1,:]})
+                p_hand = ae.o_class.eval(session=sess,feed_dict={ae.i_q:q})
+                f_hand = np.einsum('jik,Qj->Qik',W,q)+b
+                x_hand = np.einsum('Qik,Qi->Qk',f_hand,p_hand)
                 from IPython import embed ; embed()
                 sess.run(ae.newt_step)
             print("newt:",sess.run([ae.goal_all]) )
