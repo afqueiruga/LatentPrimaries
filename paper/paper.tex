@@ -711,6 +711,8 @@ To form the hessian and gradient for this step, we sum over all of the
 training data. (The contractive penalty term drops out of the this step because it does
 not depend on \(W^{dec}\).)
 
+For this step in which only the back-end regression is performmed, each set of coefficients for the curves for each variable is independent from those of the other variables: e.g., the coefficients to the sets of polynomials that parameterize $p(q)$ do not depend on those for $T(q)$. This means that this step can be performmed in blocks, performing the linear step for each component independently, at a great reduction of cost. For the full system, 3/4 of the entries are zero. We did not bother performing this optimization, but note that the savings are quadratic as the number of coefficients grow for more complex equations of state. (This is not true for training the entire deep network: it is only true for this linear regression step on the sub-network.)
+
 In future work, we would want to continue appending new \(q\)s in a
 systemic way to derive, e.g., an \(H_2O + NaCl\) equation of state with
 3 degrees of freedom, bootstraping from the pre-trained \(H_2O\)
