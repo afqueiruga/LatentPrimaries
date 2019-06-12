@@ -74,9 +74,9 @@ class Autoencoder(object):
             return loss
 
     def _make_train_step(self, data):
-#         opt = tf.train.AdamOptimizer(1e-2)
-        opt = tf.train.GradientDescentOptimizer(1e-3)
-#         opt = tf.train.RMSPropOptimizer(1e-2)
+        opt = tf.train.AdamOptimizer(1e-2)
+        #opt = tf.train.GradientDescentOptimizer(1e-3)
+        #opt = tf.train.RMSPropOptimizer(1e-2)
         loss = self.make_goal(data)
         var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         ts = opt.minimize(loss,global_step=tf.train.get_or_create_global_step(),var_list=var_list)
@@ -105,6 +105,17 @@ class Autoencoder(object):
         self.newt_step = ops[0]
         return self.newt_step
     
+    def _do_hess_train_step(self,session):
+        G = self.newt_ops[1].eval(session=session)
+        H = self.newt_ops[2].eval(session=session)
+        idxs=np.where(~H.any(axis=1))[0]
+        for i in idxs: 
+            H[i,i]=1
+        DeltaW = np.linalg.solve(H,-G)
+        i_delta_W = self.newt_ops[-2]
+        delta_assign_op = self.newt_ops[-1]
+        session.run(delta_assign_op,feed_dict={i_delta_W:DeltaW.reshape(-1,1)})
+        
     def eval_q(self, i_x):
         return sess.eval( self.o_q, feed_dict={self.i_x:i_x} )
 
@@ -190,14 +201,14 @@ class PolyAutoencoder(Autoencoder):
                         initial_value = encoder_init_options[self.encoder_init])
         be1 = self._var("enc_b", (self.size_q,) )
         q = tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
-        return tf.identity(q)
+        return tf.identity(q,name=name)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         We1 = self._var("dec_W", (N_coeff, self.size_x) )
         be1 = self._var("dec_b", (self.size_x,) )
         x = tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
-        return tf.identity(x)
+        return tf.identity(x,name=name)
     
     
 class DeepPolyAutoencoder(Autoencoder):
@@ -264,10 +275,13 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.N_bound = N_bound
         self.boundary_activation = boundary_activation
         self.softmax_it = softmax_it
+        self.softmax_beta = tf.Variable(1.0, dtype=data.dtype,
+                                        trainable=False)
         Autoencoder.__init__(self,size_x, size_q, data, data_all,
                             encoder_init=encoder_init,
                             cae_lambda=cae_lambda)
         self.o_class = self.classify(self.i_q)
+        self.o_x_argmax = self.decode(self.i_q,phase_act="argmax")
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
@@ -288,10 +302,13 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         W_select = self._var("dec_W_select", (self.N_bound,self.N_curve))
         h_select = tf.tensordot(h_bound,W_select, axes=[-1,0])
         if phase_act=="softmax":
-            h_select = tf.nn.softmax(h_select)
+            h_select = tf.nn.softmax(self.softmax_beta*h_select
+                                     ,name=name)
         else:
-            h_select = tf.one_hot(tf.argmax(h_select,axis=-1),depth=h_select.shape[-1],
-                                  dtype=h_select.dtype)
+            h_select = tf.one_hot(
+                tf.argmax(h_select,axis=-1),
+                depth=h_select.shape[-1],
+                dtype=h_select.dtype,name=name)
             print("Did this.")
         return h_select
     
@@ -306,7 +323,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         h_select = self.classify(q,phase_act=phase_act)
         
         x = tf.einsum('ijk,ij->ik',h_curve,h_select)
-        return x #tf.identity(x)
+        return tf.identity(x,name=name)
     
     def _extra_saves(self, ixs,qs, session=None):
         probs = myev(self.o_class,feed_dict={self.i_q:qs},session=session)
@@ -336,14 +353,3 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.newt_ops = ops
         self.newt_step = ops[0]
         return self.newt_step
-    
-    def _do_hess_train_step(self,session):
-        G = self.newt_ops[1].eval(session=session)
-        H = self.newt_ops[2].eval(session=session)
-        idxs=np.where(~H.any(axis=1))[0]
-        for i in idxs: 
-            H[i,i]=1
-        DeltaW = np.linalg.solve(H,-G)
-        i_delta_W = self.newt_ops[-2]
-        delta_assign_op = self.newt_ops[-1]
-        session.run(delta_assign_op,feed_dict={i_delta_W:DeltaW.reshape(-1,1)})
