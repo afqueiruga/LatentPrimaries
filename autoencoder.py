@@ -276,7 +276,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         b = self._var("enc_b", (self.size_q,) )
         return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b)
     
-    def classify(self, q, name=None):
+    def classify(self, q, name=None, phase_act="softmax"):
         qpoly = atu.polyexpand(q, self.Np_dec)
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
 
@@ -287,13 +287,15 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         
         W_select = self._var("dec_W_select", (self.N_bound,self.N_curve))
         h_select = tf.tensordot(h_bound,W_select, axes=[-1,0])
-        if self.softmax_it:
+        if phase_act=="softmax":
             h_select = tf.nn.softmax(h_select)
         else:
-            h_select = tf.onehot(tf.argmax(h_select))
+            h_select = tf.one_hot(tf.argmax(h_select,axis=-1),depth=h_select.shape[-1],
+                                  dtype=h_select.dtype)
+            print("Did this.")
         return h_select
     
-    def decode(self, q, name=None):
+    def decode(self, q, name=None, phase_act="softmax"):
         qpoly = atu.polyexpand(q, self.Np_dec)
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         
@@ -301,7 +303,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         b1 = self._var("dec_b_curve", (self.N_curve, self.size_x) )
         h_curve = tf.tensordot(qpoly,W1,axes=[-1,0])+b1
         
-        h_select = self.classify(q)
+        h_select = self.classify(q,phase_act=phase_act)
         
         x = tf.einsum('ijk,ij->ik',h_curve,h_select)
         return x #tf.identity(x)
@@ -311,7 +313,37 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         classes = probs.argmax(axis=-1)
         return ",classes",classes
 
+    def make_goal(self, data, phase_act="softmax"):
+        q = self.encode(data)
+        pred = self.decode(q,phase_act=phase_act)
+        loss = tf.losses.mean_squared_error(data, pred)
+        if self.cae_lambda != 0:
+            dqdx = atu.vector_gradient_dep(q,data)
+            cae = tf.constant(self.cae_lambda,dtype=self.dtype) \
+                    * tf.norm(dqdx, axis=(1,2))
+            return loss + tf.metrics.mean(cae)[0] # CHECK
+        else:
+            return loss
+        
     def _get_hess_vars(self):
         """These are variables used for the final fitting
         phase."""
         return (self.vars["dec_W_curve"],)# self.vars["dec_b_curve"])
+    
+    def _make_hess_train_step(self,data):
+        loss = self.make_goal(data,phase_act="onemax")
+        ops = atu.NewtonsMethod_pieces(loss, self._get_hess_vars())
+        self.newt_ops = ops
+        self.newt_step = ops[0]
+        return self.newt_step
+    
+    def _do_hess_train_step(self,session):
+        G = self.newt_ops[1].eval(session=session)
+        H = self.newt_ops[2].eval(session=session)
+        idxs=np.where(~H.any(axis=1))[0]
+        for i in idxs: 
+            H[i,i]=1
+        DeltaW = np.linalg.solve(H,-G)
+        i_delta_W = self.newt_ops[-2]
+        delta_assign_op = self.newt_ops[-1]
+        session.run(delta_assign_op,feed_dict={i_delta_W:DeltaW.reshape(-1,1)})
