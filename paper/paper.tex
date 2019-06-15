@@ -201,16 +201,31 @@ More species add more balance laws (rows of equations). The applications also in
 mechanics and chemical reactions, which are not considered. The interplay of deformations,
 reactions, and phase transitions makes the equations extremely difficult
 to solve. \cite{queiruga2018millstone}
-(In this paper, we use use $\partial_t$, $\mathrm{d}/\mathrm{d}t$,
+(In this paper, we use $\partial_t$, $\mathrm{d}/\mathrm{d}t$,
 and $\dot{()}$ to denote differentiation with respect to time
-interchangably depending on context.
-The complixity is hidden inside the relationships between temperature
+interchangeably depending on context.
+The complexity is hidden inside the relationships between temperature
 $T$, and pressure,$p$, density, $\rho$, and internal energy $e$ (or
 enthalpy, $h$, s.t. $e=\rho h - p$), 
 for the materials in question.
 
 % {\bf RESERVOIR PHYSICS LIT REVIEW HERE; Other applications;
-%   plasticity, }
+% plasticity, }
+One of the simulators with the widest-encompassing physical modules is
+the TOUGH family of solvers that have been developed at Lawrence
+Berkeley National Lab.
+The methodology is based on a primary variable switching method in 
+The simulator of THAT GUY WITH DUAL VARIABLES I MET AT AGU
+parameterizes a simplified hydrate system using density and enthalpy
+as the primary variables.
+Higher order representations of flow are also a problem to tackle
+anisotropy and increase the computational efficiency of the spatial
+discretization. CITE ME AND MICKEY AND STEPHAN
+Multiphase flow was done with finite elements in \cite{YANG2014417}.
+THAT MORIDIS FEM PAPER
+However, the complexity of the state representation restricts
+development to a 2-phase
+
 
 A single material with multiple phase transitions
 is a challenge in of itself, and the descriptions become combinatorially
@@ -225,8 +240,7 @@ and transport aspects have similar challenges. (The next stage of this
 work will "connect the beakers".)
 
 
-
-We redescribe our problem as a differential algebraic equation
+We redescribed our problem as a differential algebraic equation
 with a constraint: the balances of mass and energy are constrained by
 the EOS. We can cast the above equation into a basic form for a
 differential algebraic equation,
@@ -267,7 +281,7 @@ physically meaningful quantities.
 \cite{wu_physics-informed_2018}
 \cite{xie_tempogan:_2018}
 
- A program synthesis approach was used to search for and evaluate possible methods of Peridynamics in Queiruga, 2017 \cite{queiruga2017numerical}. (An open source implementation of the study can be found Periflakes)\cite{queiruga2018periflakes}.
+ A program synthesis approach was used to search for and evaluate possible methods of Peridynamics in Queiruga, 2017 \cite{queiruga2017numerical}. (An open source implementation of the study can be found Periflakes\cite{queiruga2018periflakes}.)
 
 Part of the new modern software engineering framework involves replacing
 human-written code with computer-written code. We are applying this
@@ -523,7 +537,7 @@ constraint:
 \begin{align}
 \text{Solve for}\, \rho(t), \, h(t), \, p(t),\, \text{and}\, T(t)\, \text{satisfying:}\\
 \partial_t \rho &  = \mathbf{k}_p(p_\infty - p) + r\\
-\partial_t (\rho h-p) & = \mathbf{k}_T(T_\infty-T) + s \\
+\partial_t (\rho h-p) & = \mathbf{k}_T(T_\infty-T)  + s + h\left(\mathbf{k}_p(p_\infty - p) + r\right) \\
 \text{such that they lie on the material EOS,}\\
 \rho,h,p,T & \in \{\text{EOS}\}
 \end{align}
@@ -754,14 +768,30 @@ of 1. The random initialization part is decided by
 \hypertarget{header-n3317}{%
 \subsection{Unsupervised Phase Classification}\label{header-n3317}}
 
-The architecture, illustrated in Figure \ref{fig:classifyingnetwork}, has the form:
+The architecture is illustrated in Figure \ref{fig:classifyingnetwork}.
+It has the following form in index notation:
 \begin{align}
-  q &= W_{enc} x^n + b_{enc}\\
-  f &= W_{dec} q^m + b_{dec} \\
-  h &= \sigma\left(W_{bound}q^m+b_{bound}\right) \\
-  p &= \text{softmax}\left(W_{phase}q^m+b_{bound[phase}\right) \\
-  \bar{x}&= f * p
+  q_i &= W^{enc}_{ij} x^n_j + b^{enc}_i\\
+  f_{ij} &= W^{dec}_{ijk} q^m_k + b^{dec}_{ij} \\
+  h_i &= \mu\left(W^{bound}_{ik}q^m_k+b^{bound}_{i}\right) \\
+  p_i &= \sigma\left(W^{phase}_{ij}h_j+b^{phase}_i\right) \\
+  \bar{x}_i&= f_{ij} p_j
 \end{align}
+where $x$ is the original prediction, $x^n$ denotes a polynomial basis
+set on $x$ (which increases the number of channels), $q$ is the latent
+space, $f$ is a set of polynomial curves, $h$ is a hidden layer
+denoting sides of boundaries, $p$ is a classification layer depending
+on $h$, and $\bar{x}$ is the predicted feature. The activation $\mu$
+is chosen as a standard neuron, e.g. $\tanh$ or $\text{sigmoid}$. The
+activation $\sigma$ is a probability activation, which is chosen to be
+a softmax,
+\begin{equation}
+\sigma_i(x;\beta) = \frac{e^{\beta x_i}}{\sum_j e^{\beta x_j}}
+\end{equation}
+or, in the limit, the hard argmax:
+\begin{equation}
+\sigma_i \rightarrow \text{onehot}\arg\max z as  \beta\rightarrow\infty
+\end{equation}
 
 \begin{figure}
 \centering
@@ -775,49 +805,54 @@ The architecture, illustrated in Figure \ref{fig:classifyingnetwork}, has the fo
   \includegraphics[width=3in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/classifier_good.jpg}
   \caption{\label{fig:classified}Result of the unsupervised phase classifier. Compare this plot to the original labeled dataset Figure \ref{fig:pTrho}.}
 \end{figure}
-Because the identity of the phases,
+Because the identity of the phases,XXXXXXXX
 For comparison purposes, we group together liquid-gas-supercritical as one contiguous label.
 
 \hypertarget{header-n3321}{%
 \section{Simulation}\label{header-n3321}}
 
+Examining the $T,p,\rho$ surface allows for human interpretability, but
+the decoder actually yields four new functions with two unknowns:
+$D(q)=\{T(q),p(q),\rho(q),h(q)\}$. These surfaces can be plotted as
+independent 2D functions: the surface of \ref{fig:classified} is
+unfolded into the new parameterization in Figure \ref{fig:foursurfaces}.
+\begin{figure}
+  \centering
+  \includegraphics{../slides/water_four_surfaces_plot.png}
+  \caption{\label{fig:foursurfaces}The four 2D surfaces that make up
+    the new parameterization. The learned surface captures the sharp
+    kinks and vertical fronts in Figure \ref{fig:classifyingresult},
+    but is an analytic and smooth function of the two learned unknowns.}
+  \end{figure}
+
 With the trained model, we solve for \(q_1(t)\) and \(q_2(t)\) such that:
 \begin{align}
-\partial_t \rho(q_1,q_2) & = \nabla \cdot \mathbf{k} \nabla p(q_1,q_2) + r \\
-\partial_t \rho h(q_1,q_2)-p & = \nabla \cdot \mathbf{k'}\nabla T(q_1,q_2) + s
+\partial_t \rho(q_1,q_2) & = \mathbf{k} \left( p_\infty-p(q_1,q_2) \right)  + r \\
+\partial_t \left(\rho h(q_1,q_2)-p\right) & =\mathbf{k}_T(T_\infty-T(q_1,q_2))  + s + h\left(\mathbf{k}_p(p_\infty - p) + r\right)
 \end{align}
-where \(\rho(q_1,q_2)\) etc. are the back of an autoencoder:
-
-
-Using the autoencoder to automatically remove the local constraint:
-
+where the expressions for  \(\rho(q_1,q_2)\) etc. are the back of the
+trained autoencoder,. The trained
+autoencoder automatically removes the local constraint, satisfying
 \begin{equation}
 eos(D(q_1,q_2)) = 0 \, \forall \,q_1,q_2
 \end{equation}
+Thus, the system will always satisfy the constraints as $q$ is
+evolved, even during intermediate iterative solution steps. Note again
+that the machine learning is only applied to the
+material representation: the balance laws are expressed directly.
 
-Only training the material representation, not the balance
-laws.
-
-First, we had a constrained DAE:
+To develop the rest of the discretization, we introduce the compact form:
 \begin{align}
 \frac{\mathrm{d}}{\mathrm{d}t} m(T,p,\rho,h) &= r(T,p,\rho,h)\\
 eos(T,p,\rho,h) &= 0
 \end{align}
 where $m=\{\rho,\rho h -p\}$ and $r$ is the right hand side, with no good representation of \(eos\) everywhere.
 
-We obtain four new functions with two unknowns. We're actually solving the manifold of Figure X.
-\begin{figure}
-  \centering
-  \includegraphics{../slides/water_four_surfaces_plot.png}
-  \caption{\label{fig:foursurfaces}The four 2D surfaces that make up the new parameterization. The learned surface captures the sharp kinks and vertical fronts in Figure \ref{fig:classifyingresult}, but is ananalytic and smooth function of the two learned unknowns.}
-  \end{figure}
 
 The decoder part of the network is inserted into the balance law
-
 \begin{equation}
 \frac{\mathrm{d}}{\mathrm{d}t} m(D(q)) = r(D(q))
 \end{equation}
-
 We can parameterize this equation with any time stepping scheme, .e.g. a
 Runge-Kutta scheme. For subsurface flow, backward Euler is popular due
 to its simplicity and L-stability, which we follow since the topic of
@@ -839,19 +874,40 @@ q^{k+1} = q^k + \alpha\Delta q^{k+1}
 \end{equation}
 where $\alpha$ is an under relaxation parameter.
 
-This equation is deceptively simple: the function \(R(q)\) has complex logic encoded in it; if-then
+This equation is deceptively simple: the function $R(q)$ has complex logic encoded in it; if-then
 statements appear if the model used activations such as rectifiers.
 However, the complex material behavior which traditionally requires
 the vast majority of programming was implemented automatically by the
 models; implementing equations XX, XX, and XX requires only a few lines
 of human-written code. 
 
+\subsection{Dimensionalization}
+
+Recall that the datasets are normalized to be zero-center and
+unit-ranged to improve training. Thus, the outputs of the decoder are not in true
+units.
+The ranges are saved in a separate file which are loaded by the
+simulation. The network is loaded, the $D(q)$ is extracted, and the following
+transformations are applied to the outputs:
+\begin{align}
+T(q)      &= \left(T_{max}-T_{min}\right) D_T(q) +T_{mean} \\
+p(q)      &= \exp\left(\left( p_{max}-p_{min}\right)
+            D_p(q) +p_{mean} \right) \\
+\rho(q) &= \left(\rho_{max}-\rho_{min}\right) D_{\rho}(q) +\rho_{mean}\\
+h(q)      &= \left( h_{max}-h_{min}\right) D_h(q)  +h_{mean}
+\end{align}
+The exponent transformation is only applied to the cases where
+$\log(p)$ was used to make the training set.
+The range values are in the proper units, so that equation rows in the
+simulation are in SI units.
+
+
 \hypertarget{header-n3339}{%
 \subsection{Initialization}\label{header-n3339}}
 
 There is a caveat with representing the degrees of freedom of the system
-on a learned space: the user does not know the meaning of \(q\) as an
-input. Further, the values of \(q\) vary from network to network and
+on a learned space: the user does not know the meaning of $q$ as an
+input. Further, the values of $q$ vary from network to network and
 depend on the parameterization. The user needs to be able to specify the
 "real" physical quantities.
 
@@ -860,16 +916,31 @@ initial values. In a multiphase solver such as TOUGH, the state needs
 to be specified with the two primary variables plus the state tag (sans input file formatting): 
 \begin{verbatim}
     9e5 20 Aqu
-    0.5 20 AqG
+    0.4 20 AqG
 \end{verbatim}
 Note that the first primary variable means pressure in the first line
 for a pure-liquid state,
 but saturation in the second line for the liquid-gas equilibrium.
-This makes sense inuitively, as this is how humans are taught, but
+This makes sense to human intuition but
 still leads to bugs and occasionally requires looking up values in
-textbooks or the manual. (Is it $S_{gas}$ or $S_{aqu}$ on the second
+textbooks or the software manual. (Is it $S_{gas}$ or $S_{aqu}$ on the second
 line?) A fully fledged solver needs to check the user specified
-initial conditions for erroneous inputs.
+initial conditions for erroneous inputs, but it cannot detect ambiguities.
+
+The extra process of determining the initial state means that more error checking is needed
+in verifying user inputs, but this is necessary in any
+multiphase/multicomponent reservoir simulator. LatentSim does not yet
+detect and report errors, and only reports divergence. In our study, the
+testing problem specifications are all correct, but not all network
+realizations are acceptable. Failure to determine a \(q\) for one of the
+test initial conditions is a common mode of detecting unacceptable
+network realizations; this is marked as a testing error during training
+which invalidates a model as a potential realization.
+
+The current implementation LatentSim does not support inputting via
+saturations on the equilibria, a commonly used primary variable, but
+this problem could be solved with future engineering work for a
+non-experimental simulator.
 
 For LatentSim, the input system is not yet as robust as a
 fully-fledged user-facing simulator, but the inputs are specified in
@@ -886,22 +957,31 @@ values. This sets up a system of two equations.
 Note that the encoder only necessarily works when all four values are
 correct. Thus, it is necessary to actually solve the nonlinear problem
 on the decoder:
-\[D(q^0)_i = s^0_i \quad \text{for specified}\; i\]
+\begin{equation}
+  D(q^0)_i = s^0_i \quad \text{for specified}\; i
+\end{equation}
 This equation has two rows indexing into the four state variables;
 e.g. only the rows associated with $p$ and $T$ are solved if those are
 specified, which is usually the case. The above equation is solved
 with Newton's method. The two corresponding rows are cut out of
 the tangent matrix to $D$,
-\[K_{ij} = \frac{\partial D_i}{\partial q_j}  \quad \text{for specified}\; i, \text{for}\;j=1,2\]
+\begin{equation}
+K_{ij} = \frac{\partial D_i}{\partial q_j}  \quad \text{for
+    specified}\; i, \text{for}\;j=1,2
+\end{equation}
+
 and the following system of equations is solved for an update to $q$,
-\[K_{ij}\Delta q_j = s^0_i-D(q)_i\]
-The iteration u $q$ is repeated until convergence, with under-relaxation used again to update
+\begin{equation}
+K_{ij}\Delta q_j = s^0_i-D(q)_i
+\end{equation}
+The iteration on $q$ is repeated until convergence, with under-relaxation used again to update:
  \begin{equation}
 q^0_{k+1} =q^0_{k} + \alpha \Delta q_{k}
 \end{equation}
 with the under-relaxation parameter usually set to $\alpha \approx
 0.1$.
-The initial condition problem is not gaurunteed to converge, however,
+
+The initial condition problem is not guaranteed to converge, however,
 and often does not.
 For example, if the initial guess was in the liquid phase and the target point
 in the EOS space is in a solid, the iteration will fail.
@@ -946,26 +1026,17 @@ p^*(0)\\
  These sets of $q^0_{guess}$ are then iterated upon using the Newton's
  method procedure. 
 
- It is further possible that none of the initial guesses for this iteration
-converge. There are two possiblities: the target state point is
+It is further possible that none of the initial guesses for this iteration
+converge. There are two possibilities: the target state point is
 incorrectly specified or out-of-range (e.g., negative density), or the
 network is incapable of representing the desired material properties
-(i.e., poorly trained). 
+(i.e., poorly trained). The first possibility shows an invalid
+problem specification for the chosen EOS. The second possibility is
+crucial to the automated training process. If a given network cannot
+find an initial condition for every possible test problem, it fails
+the tests and is marked as invalid. This is one way of automatically
+verifying the training process.
 
-The weakness of this necessity means that more error checking is needed
-in verifying user inputs, but this is necessary in any
-multiphase/multicomponent reservoir simulator. LatentSim does not yet
-detect and report errors, and only reports divergence. In our study, the
-testing problem specifications are all correct, but not all network
-realizations are acceptable. Failure to determine a \(q\) for one of the
-test initial conditions is a common mode of detecting unacceptable
-network realizations; this is marked as a testing error during training
-which invalidates a model as a potential realization.
-
-The current implementation LatentSim does not support inputting via
-saturations on the equilibria, a commonly used primary variable, but
-this problem could be solved with future engineering work for a
-non-experimental simulator.
 
 \hypertarget{header-n3493}{%
 \subsection{Methodology Summary}\label{header-n3493}}
@@ -974,7 +1045,6 @@ non-experimental simulator.
 \def\labelenumi{\arabic{enumi}.}
 \item
   Make a database of \(T,p,\rho,h,X_1,...\)
-
   \begin{itemize}
   \item
     Piece together empirical fits for each phase from literature
@@ -1031,7 +1101,8 @@ using Matplotlib, Plotly, and Visdom. The accompanying video was
 generated using Paraview.
 
 The codebase is released open source at
-\url{https://github.com/afqueiruga/latentsim}. Helper methods that the
+\url{https://github.com/afqueiruga/latentsim}. Helper methods and
+custom optimizers that the
 author reuses in various TensorFlow-based projects are factored out in
 the dully-named \url{https://github.com/afqueiruga/afqstensorflowutils}.
 The implementation of the empirical equations of state for water are
@@ -1045,41 +1116,26 @@ Multiple hyperparameters are trained.
 
 Each architecture trained on the autoencoder task is then
 
-Three different extents:
+The phase space of water is broken up into three different extents to
+change the complexity of the training process:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\item
-  Linear Equation of State
-
-  \begin{itemize}
-  \item
-    \textbf{Test!}
-  \item
-    Reduces to single phase Darcy's law problem (slide 1)
-  \item
-    \( p = 10^5+[-10^3, 10^3] Pa,\quad T = [ 19, 21 ] ^o C\)
-  \end{itemize}
-\item
-  Water Liquid-Gas Regime
-
-  \begin{itemize}
-  \item
-    One phase boundary 
-  \item
-    \( p = [100,5\times 10^5] Pa, \quad T = [274,594] K\)
-  \end{itemize}
-\item
-  Water Solid-Liquid-Gas-Supercritical Regimes
-
-  \begin{itemize}
-  \item
-    No linear mapping to latent space 
-  \item
-    Entire span
-  \item
-    \( p = [6\times 10^{-6},3\times 10^8]Pa, \quad T = [150,1000] K \)
-  \end{itemize}
+\item Linear Equation of State: the range is $ p = 10^5+[-10^3, 10^3]
+  Pa,\quad T = [ 19, 21 ] ^o C$. This reduces to the single phase
+  Darcy's law problem where the material has constant compressibility
+  and heat capacity. This is the most basic test of the training
+  framework, and provides analytical solutions to test the simulation
+  framework.
+\item Liquid-Gas Regime: the range is  $ p = [100,5\times 10^5] Pa,
+  \quad T = [274,594] K$. This restricts the domain to only one phase
+  boundary. With this range, it is possible to find a linear
+  combination of $T,p,\rho,h$ that can make a 1-1 mapping. (The usual
+  $T-p$ combination does not, but $\rho-h$ would.)
+\item Solid-Liquid-Gas-Supercritical Regimes: this covers the full
+  extent of the parameterized equation of state of water,
+    $ p = [6\times 10^{-6},3\times 10^8]Pa, \quad T = [150,1000] K
+    $. This problem has no linear mapping to a unique latent space.
 \end{enumerate}
 
 \hypertarget{header-n3418}{%
@@ -1087,7 +1143,7 @@ Three different extents:
 
 The verification problems are listed in Table \ref{tab:problems}.
 \begin{table}
-  \caption{\label{tag:problems}Enumeration of the problems used to test and evaluate each fo the generaed architectures}
+  \caption{\label{tag:problems}Enumeration of the problems used to test and evaluate each fo the generated architectures}
 \begin{tabular}{l|c|c|c}
   Name & start & path & end\\
 \hline
@@ -1097,10 +1153,10 @@ The simulator was benchmarke against the long standing TOUGH+ multiphase
 multicomponent
 
 Single-grid block simulations were set up for most of the cases. TOUGH+
-does not handle supercritical \(H_2O\), so these test problems were not
+does not handle supercritical \ch{H2O}, so these test problems were not
 used to benchmark. (The supercritical phase region is not practically
 relevant for water, but it is very important for other fluids such as
-\(CO_2\).) (Note that, as a major motivation of this work, adding
+\ch{CO2}.) (Note that, as a major motivation of this work, adding
 supercritical states to the existing Fortran simulator would require
 coding of one new logical state with two new state transitions with
 primary variable switches; for the approach of this paper, the dataset
@@ -1138,14 +1194,14 @@ classification.
 
 We illustrated a programming model that is able to incorporate machine
 learning models into existing well known computational methodologies.
-This allows us to enforce physically known quanities, such as the
+This allows us to enforce physically known quantities, such as the
 balance laws.
 
 The TensorFlow system is not quite suited for this type of workflow -\/-
-the resulting simualtions are extremely slow due to repeated calls to
+the resulting simulations are extremely slow due to repeated calls to
 session.run and a very complicated graph structure for the polynomials.
 Currently, the system is being reimplemented in Julia using Flux and
-Zygote to seemlessly reincorporate into a fully-fledged new reservoir
+Zygote to seamlessly reincorporate into a fully-fledged new reservoir
 simulator. The pendulum has been reimplemented in Julia at .
 
 We are also demonstrating a new programming paradigm applied to
@@ -1155,7 +1211,7 @@ for new equations with new unknown degrees of freedom, that are good to
 solve.
 
 Each implemented equation of state (three options in this work spanning
-different extents of \(H_2O\)) has a database of potential realizations.
+different extents of \ch{H2O}) has a database of potential realizations.
 The entries are model architectures, parameters, and training
 environment configurations and logs for each equation-of-state dataset.
 This database of models replaces a version controlled repository of user
@@ -1167,8 +1223,8 @@ model architectures and tricks for initializing the networks.
 
 We can also think about this work as offline preconditioning.
 
-In TOUGH, for one instance, all of the calculations are performmed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propogation occur, especially because numerical differentiation is used.
-The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically nondimensionalize the entire problem.
+In TOUGH, for one instance, all of the calculations are performed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propogation occur, especially because numerical differentiation is used.
+The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically non-dimensionalize the entire problem.
 
 The larger simulation code links into the trained database to load the
 computer-written model into the computation graph for the simulation,
