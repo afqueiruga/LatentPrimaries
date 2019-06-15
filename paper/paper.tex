@@ -220,8 +220,8 @@ parameterizes a simplified hydrate system using density and enthalpy
 as the primary variables.
 Higher order representations of flow are also a problem to tackle
 anisotropy and increase the computational efficiency of the spatial
-discretization. CITE ME AND MICKEY AND STEPHAN
-Multiphase flow was done with finite elements in \cite{YANG2014417}.
+discretization\cite{hannon_enhanced_2018}. 
+Multiphase flow was done with finite elements in \cite{yang_fully_2014}.
 THAT MORIDIS FEM PAPER
 However, the complexity of the state representation restricts
 development to a 2-phase
@@ -281,7 +281,12 @@ physically meaningful quantities.
 \cite{wu_physics-informed_2018}
 \cite{xie_tempogan:_2018}
 
- A program synthesis approach was used to search for and evaluate possible methods of Peridynamics in Queiruga, 2017 \cite{queiruga2017numerical}. (An open source implementation of the study can be found Periflakes\cite{queiruga2018periflakes}.)
+ A program synthesis approach was used to search for and evaluate
+ possible methods of Peridynamics in Queiruga, 2017
+ \cite{queiruga_numerical_2017}. (An open source implementation of the
+ study can be found Periflakes\cite{queiruga_periflakes_2019} using the
+ Popcorn/Cornflakes system for symbolic code generation
+ \cite{queiruga_cornflakes:_2018,queiruga_popcorn:_2018}.)
 
 Part of the new modern software engineering framework involves replacing
 human-written code with computer-written code. We are applying this
@@ -562,7 +567,7 @@ x^2 + y^2 & = R^2
 \end{align}
 Note that we are considering the nonlinear pendulum.
 
-There are many ways to solve this cannonical equation: Lagrange
+There are many ways to solve this canonical equation: Lagrange
 multipliers (\(f(t)\) is the multiplier in the way we have written it
 above), penalties, change of variables, etc. The change of variables
 method exploits the Lagrangian mechanics formulation, where we state
