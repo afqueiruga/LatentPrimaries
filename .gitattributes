@@ -25,3 +25,10 @@ data_files/water_linear_scaled_train.npy filter=lfs diff=lfs merge=lfs -text
 data_files/water_iapw_logp_ranges.csv filter=lfs diff=lfs merge=lfs -text
 data_files/water_iapw_logp.csv filter=lfs diff=lfs merge=lfs -text
 data_files/surf_uv.csv filter=lfs diff=lfs merge=lfs -text
+slides/evo.mp4 filter=lfs diff=lfs merge=lfs -text
+slides/training_water_slgc_logp_64_networks.html filter=lfs diff=lfs merge=lfs -text
+slides/water_linear_simulation_tests.html filter=lfs diff=lfs merge=lfs -text
+slides/water_slgc_logp_64_qq_plots.html filter=lfs diff=lfs merge=lfs -text
+slides/water_slgc_logp_64_simulation_tests.html filter=lfs diff=lfs merge=lfs -text
+figures/water_enthalpy.html filter=lfs diff=lfs merge=lfs -text
+figures/water_eos.html filter=lfs diff=lfs merge=lfs -text
