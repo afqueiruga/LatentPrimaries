@@ -118,7 +118,7 @@ def make_simulation_plot_list(database,eos_name):
     colorkey = defaultdict(lambda : colorring.next())
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
-    print problems
+    print(problems)
     plots = [ plot_one_simulation(sdb,eos_name, p[0], colorkey=colorkey) 
              for p in problems ]
     return plots
