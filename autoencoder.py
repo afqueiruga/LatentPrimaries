@@ -277,6 +277,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.softmax_it = softmax_it
         self.softmax_beta = tf.Variable(1.0, dtype=data.dtype,
                                         trainable=False)
+        self.i_beta = tf.placeholder(name='beta',shape=None,dtype=data.dtype)
+        self.update_beta_op = tf.assign(self.softmax_beta,self.i_beta)
         Autoencoder.__init__(self,size_x, size_q, data, data_all,
                             encoder_init=encoder_init,
                             cae_lambda=cae_lambda)
@@ -300,7 +302,8 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         h_bound = act(tf.tensordot(qpoly,W2,axes=[-1,0])+b2)
         
         W_select = self._var("dec_W_select", (self.N_bound,self.N_curve))
-        h_select = tf.tensordot(h_bound,W_select, axes=[-1,0])
+        b_select = self._var("dec_b_select",(self.N_curve,))
+        h_select = tf.tensordot(h_bound,W_select, axes=[-1,0]) + b_select
         if phase_act=="softmax":
             h_select = tf.nn.softmax(self.softmax_beta*h_select
                                      ,name=name)
@@ -353,3 +356,9 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.newt_ops = ops
         self.newt_step = ops[0]
         return self.newt_step
+
+    def update_beta(self,session,inc=0.1):
+        bnow = self.softmax_beta.eval(session=session)
+        session.run(self.update_beta_op,
+                    feed_dict={self.i_beta:bnow+inc})
+        

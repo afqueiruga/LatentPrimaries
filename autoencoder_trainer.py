@@ -56,10 +56,9 @@ class DoStuffHook(tf.train.SessionRunHook):
 def train_autoencoder(name, dataname, outerdim, innerdim, 
                           hyper=default_hyper,
                       training_dir='',data_dir='',n_epoch=5000, image_freq=1500):
-    
     hyperpath = string_identifier(hyper)
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
-    
+    newt_freq = n_epoch
     graph = tf.Graph()
     with graph.as_default():
         # Load the data
@@ -94,7 +93,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         loghook = tf.train.SummarySaverHook(
             summary_op=[tf.summary.scalar("goaltrain",ae.goal_all),
                         tf.summary.scalar("goaltest",ae.goal_test)],
-            save_steps=100,output_dir=training_dir)
+            save_steps=10,output_dir=training_dir)
         # Print to screen hook
         @DoStuffHook(freq=1)
         def printgoalhook(ctx,run_values):
@@ -151,11 +150,16 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
             # Do the SGD rounds
             i=0
             while not sess.should_stop():
-                if i%(n_epoch/2)==n_epoch/2-1:
+                # Do two newt steps throughout the training period
+                if i%(newt_freq)==newt_freq-1:
                     newtstep(sess)
                 else:
+                    ae.update_beta(sess,inc=0.1)
+
                     print("loop:",sess.run([ae.goal_all,ae.train_step]
                                        +list(ae._get_hess_vars())) )
+                    # increment beta
+                    #try:
                 i+=1
 
 
