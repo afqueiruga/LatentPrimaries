@@ -53,6 +53,22 @@ def plot_qq_Tprhoh(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     # return subfig
     return plts
 
+def read_all_surfaces(arch_dir):
+    files = list_files(arch_dir+'/surf_*.csv')
+    surfs = []
+    for f in files:
+        dat = np.loadtxt(f,delimiter=",",skiprows=1)
+        surfs.append( ( dat, Delaunay(dat[:,4:6]).simplices ) )
+    return surfs
+
+def make_animation(surfs):
+    return go.Figure(data=[plot_ptrho(surfs[0][0],surfs[0][1])],
+                     layout=dict(
+                         updatemenus= [{'type': 'buttons',
+                           'buttons': [{'label': 'Play',
+                                        'method': 'animate',
+                                        'args': [None]}]}])
+              frames=[{"data":[plot_ptrho(d,s)]} for d,s in surfs[1::20]])
 
 def read_networks(training_dir):
     archs = os.listdir(training_dir)
