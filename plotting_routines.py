@@ -13,6 +13,7 @@ import plotly.figure_factory as FF
 
 from SimDataDB import SimDataDB
 
+d_off = 2.0
 
 def list_files(fpattern):
     files = glob.glob(fpattern)
@@ -21,7 +22,7 @@ def list_files(fpattern):
     return files
 
 def make_tri_plot(x,y,z, simplices, c=None, offset=(0,0), name='', **kwargs):
-    return go.Mesh3d(x=x+1.5*offset[0],y=y,z=z+1.5*offset[1],
+    return go.Mesh3d(x=x+d_off*offset[0],y=y,z=z+d_off*offset[1],
                      i=simplices[:,0],j=simplices[:,1],k=simplices[:,2],
                      intensity=c/np.max(c),
                      name=name,showscale = True,**kwargs)
@@ -67,7 +68,7 @@ def make_animation(surfs):
                          updatemenus= [{'type': 'buttons',
                            'buttons': [{'label': 'Play',
                                         'method': 'animate',
-                                        'args': [None]}]}])
+                                        'args': [None]}]}]),
               frames=[{"data":[plot_ptrho(d,s)]} for d,s in surfs[1::20]])
 
 def read_networks(training_dir):
@@ -95,7 +96,10 @@ def plot_networks(surfaces,prefix=''):
     
     ptrhos = [ plot_ptrho(d,simp,offset=o,name=n)
                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
-    fig = go.Figure(data=ptrhos)
+    annotes = [ dict(text=n,x=d_off*o[0],y=0,z=d_off*o[1])
+              for n,o in zip(surfaces,offsets)]
+    fig = go.Figure(data=ptrhos,
+                    layout=go.Layout(scene=dict(annotations=annotes)) )
     return fig
 
 #     qqrhos = [ plot_qqrho(d,simp,offset=o,name=n) 
