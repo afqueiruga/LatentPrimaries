@@ -14,7 +14,8 @@ server = app.server
 app.config.suppress_callback_exceptions = True
 from dash.dependencies import Input, Output, State
 
-from plotting_routines import *
+import plotting_routines as ls_plot
+import grading_routines as ls_grade
 
 if 'DYNO' in os.environ:
     app_name = os.environ['DASH_APP_NAME']
@@ -29,11 +30,17 @@ eoses = [
         "water_linear",
 ]
 eos = eoses[1]
-# Surfs
-surfs = read_networks(hub+'training_'+eos)
-surfs.pop('.DS_Store',None) # lol
+def get_it_all(eos):
+    "Load the data for a particular EOS into server memory"
+    # Surfaces
+    surfs = ls_plot.read_networks(hub+'training_'+eos)
+    surfs.pop('.DS_Store',None) # lol
+    # Training and results 
+    table = ls_grade.prep_table(eos,hub)
+    all_archs = list(surfs.keys())
+    return all_archs, table, surfs
 
-all_archs = list(surfs.keys())
+all_archs, archs_table, surfs = get_it_all(eos)
 
 multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected', 
                                      options=[{'label':k,'value':k} for k in all_archs],
@@ -42,10 +49,16 @@ multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected',
              className="row")
 
 
+# Prep the EOS selector table
+columns = ls_grade.table_column_names.copy()
+columns.append("id")
+for row in archs_table:
+    row["id"]=row["name"]
+print(archs_table)
 table = dash_table.DataTable(
     id = "select-table",
-    columns = [{"name": "Name","id":"id"}],
-    data = [{"name":k,"id":k} for k in all_archs],
+    columns = [{"name":k,"id":k} for k in columns], #[{"name": "Name","id":"id"}],
+    data = archs_table, #[{"name":k,"id":k} for k in all_archs],
     row_selectable = "multi",
     sorting=True,
     sorting_type="multi",
@@ -62,15 +75,13 @@ layout = html.Div([
     [Input("select-table", "selected_row_ids")])
 def update_graph(selected):
     if selected is None: selected = []
-    print(selected)
     ctx = dash.callback_context
-    figure = plot_networks({k:surfs[k] for k in selected})
+    figure = ls_plot.plot_networks({k:surfs[k] for k in selected})
     return figure
     
     
 
 
 app.layout = layout
-
 if __name__ == '__main__':
     app.run_server(debug=True)
