@@ -62,25 +62,17 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
     graph = tf.Graph()
     with graph.as_default():
         # Load the data
-#         dataset = tf.data.experimental.make_csv_dataset(
-#             data_dir+'/'+dataname,
-#             5000,
-#             select_columns=['T',' p',' rho',' h'],
-#             column_defaults=[tf.float64,tf.float64,tf.float64,tf.float64]
-#         )
-# Set up the graph from the inputs
-#         stream = atu.make_datastream(dataset,batch_size=0,buffer_size=1000)
-#         stream = tf.transpose(stream)
-        data_all = np.load(data_dir+"water_lg_scaled_train.npy") # TODO
+        data_all = np.load(data_dir+"/"+dataname+"_train.npy")
         dataset_all  = tf.data.Dataset.from_tensors(data_all).repeat()
         dataset_mini = tf.data.Dataset.from_tensor_slices(data_all).repeat()
-        test_data = np.load(data_dir+'/'+"water_lg_scaled_test.npy")
+        test_data = np.load(data_dir+'/'+dataname+"_test.npy")
         dataset_test = tf.data.Dataset.from_tensors(test_data).repeat()
-        
+        # Make streams
         stream_all = dataset_all.make_one_shot_iterator().get_next()
         stream_mini = dataset_mini.batch(1000).make_one_shot_iterator().get_next()
         stream_test = dataset_test.make_one_shot_iterator().get_next()
-
+        
+        # Make the autoencoder graph
         global_step = tf.train.get_or_create_global_step()
         onum = tf.Variable(0,name="csv_output_num")
         ae = AutoencoderFactory(hyper,outerdim,innerdim,stream_mini, stream_all)
