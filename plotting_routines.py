@@ -13,6 +13,7 @@ import plotly.figure_factory as FF
 
 from SimDataDB import SimDataDB
 
+color_ring = itertools.cycle(['black','orange','purple','red','blue','green'])
 d_off = 2.0
 
 def list_files(fpattern):
@@ -115,8 +116,7 @@ def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
     gridx, gridy = 1,Nfields
     showleg = defaultdict(lambda : True)
     if colorkey is None:
-        colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
-        colorkey = defaultdict(lambda : colorring.next())
+        colorkey = defaultdict(lambda : next(color_ring) )
     subfig = tools.make_subplots(rows=gridy,cols=gridx,
                                  shared_xaxes=True,shared_yaxes=False)
     res = sdb.Query(
@@ -130,12 +130,28 @@ def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
                                showlegend=showleg[n])
             showleg[n]=False
             subfig.append_trace(trace,1+i,1)
-#     print(subfig)
     return subfig
 
+def plot_pT_simulation(sdb, eos_name, problem, colorkey=None):
+    networks = sdb.Query('select distinct network from {0}'.format(eos_name))
+    showleg = defaultdict(lambda : True)
+    if colorkey is None:
+        colorkey = defaultdict(lambda : next(color_ring) )
+    res = sdb.Query(
+            'select network,series from {eos_name} where problem="{0}"'.
+            format(problem,eos_name=eos_name))
+    traces = []
+    for n,t in res:
+        traces.append( 
+            go.Scatter(x=t[:,3],y=t[:,4],name=n,legendgroup=n,
+            mode='lines',
+            line=dict(color=colorkey[n]),
+            showlegend=False) )
+    return traces
+
+
 def make_simulation_plot_list(database,eos_name):
-    colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
-    colorkey = defaultdict(lambda : colorring.next())
+    colorkey = defaultdict(lambda : next(color_ring))
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
     print(problems)
@@ -151,8 +167,7 @@ def plot_simulations(database,eos_name,prefix=''):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     print(problems)
     showleg = defaultdict(lambda : True)
-    colorring = itertools.cycle(['black','orange','purple','red','blue','green'])
-    colorkey = defaultdict(lambda : colorring.next())
+    colorkey = defaultdict(lambda : next(color_ring))
     numproblems=len(problems)
     gridx = int(numproblems**0.5)+1
     gridy = int(numproblems / gridx)+1
