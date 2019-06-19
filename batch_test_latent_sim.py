@@ -56,7 +56,18 @@ class Hot_Gas():
     answer = dict(T=550,p=5.0e5,
         rho= iapws97.density_region2(550.0,5.0e5),
         h  =iapws97.enthalpy_region2(550.0,5.0e5) )
-        
+
+class Hot_Gas_Fill():
+    t_max = 1000.0
+    initial = dict(T=450,p=5.0e5, phase="Gas")
+    params =  dict(mass_source=0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    @staticmethod
+    def schedule(sim,t):
+        pass
+    answer = dict(T=450,p=5.0e5,
+        rho= iapws97.density_region2(450.0,5.0e5),
+        h  =iapws97.enthalpy_region2(450.0,5.0e5) )
+    
 class Transition_L2G():
     t_max = 10.0
     initial = dict(T=350,p=5.0e5, phase="Liquid")
@@ -81,7 +92,7 @@ class Transition_L2G_Drain():
     
 class Liquid_Drain():
     t_max = 2000.0
-    initial = dict(T=373.0,p=3.0e5, phase="Liquid")
+    initial = dict(T=373.15,p=3.0e5, phase="Liquid")
     params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
     @staticmethod
     def schedule(sim,t):
@@ -129,7 +140,8 @@ eoses = {
     'water_lg':dict(
         scale_file = "data_files/surf_ranges.csv",
         logp=False,
-        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',]
+        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G','Transition_L2G_Drain'
+                     'Liquid_Drain']
     ),
     'water_linear':dict(
         scale_file = "data_files/water_linear_ranges.csv",
@@ -180,9 +192,14 @@ def perform_tests_for_eos(eos, result_dir='.'):
         return {'series':time_series}
     
     for n in networks:
-        for p in problem_list:
-            solve_a_problem(p,n)
-
+        try:
+            for p in problem_list:
+                solve_a_problem(p,n)
+        except Exception as e:
+            print("The network", n, " threw an error: ", e)
 if __name__=="__main__":
     for k in eoses:
-        perform_tests_for_eos(k, hub+'test_databases/')
+        try:
+            perform_tests_for_eos(k, hub+'test_databases/')
+        except FileNotFoundError:
+            pass
