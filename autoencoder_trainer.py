@@ -55,7 +55,8 @@ class DoStuffHook(tf.train.SessionRunHook):
     
 def train_autoencoder(name, dataname, outerdim, innerdim, 
                           hyper=default_hyper,
-                      training_dir='',data_dir='',n_epoch=5000, image_freq=1500):
+                      training_dir='',data_dir='',n_epoch=5000, image_freq=1500,
+                     UseNewt = True):
     hyperpath = string_identifier(hyper)
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
     newt_freq = n_epoch
@@ -76,7 +77,8 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         global_step = tf.train.get_or_create_global_step()
         onum = tf.Variable(0,name="csv_output_num")
         ae = AutoencoderFactory(hyper,outerdim,innerdim,stream_mini, stream_all)
-        ae._make_hess_train_step(stream_all)
+        if UseNewt: # Leave it out of the graph if so; it's heavy and expensive to compute
+            ae._make_hess_train_step(stream_all)
         ae.goal_test = ae.make_goal(stream_test)
         init = tf.global_variables_initializer()
         meta_graph_def = tf.train.export_meta_graph(filename=training_dir+"/final_graph.meta")
@@ -143,7 +145,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
             i=0
             while not sess.should_stop():
                 # Do two newt steps throughout the training period
-                if i%(newt_freq)==newt_freq-1:
+                if UseNewt and i%(newt_freq)==newt_freq-1:
                     newtstep(sess)
                 else:
                     ae.update_beta(sess,inc=0.1)

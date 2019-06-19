@@ -40,7 +40,7 @@ if __name__=="__main__":
                           training_dir=training_dir,
                           data_dir = data_dir,
                           n_epoch = n_epoch,
-                          image_freq = 10)
+                          image_freq = 50)
     if True: # Toggle parallel
         p = multi.Pool(processes=4)
         p.map( job, sets_to_try )
