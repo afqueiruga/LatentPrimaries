@@ -22,6 +22,9 @@ def list_files(fpattern):
     files.sort(key=lambda f: grab_digit(f) )
     return files
 
+#
+# 3D Plotting of the learned surfaces
+#
 def make_tri_plot(x,y,z, simplices, c=None, offset=(0,0), name='', **kwargs):
     return go.Mesh3d(x=x+d_off*offset[0],y=y,z=z+d_off*offset[1],
                      i=simplices[:,0],j=simplices[:,1],k=simplices[:,2],
@@ -83,8 +86,9 @@ def read_networks(training_dir):
             dat = np.loadtxt(files[-1],delimiter=",",skiprows=1)
             surfaces[arch] = ( dat, Delaunay(dat[:,4:6]).simplices )
         except:
-            dat = np.zeros((3,7))
-            surfaces[arch] = ( dat, [] )
+            print("No surface for ",arch)
+            #dat = np.zeros((3,7))
+            #surfaces[arch] = ( dat, [] )
     return surfaces
 
 def generate_trisurf_plots(surfaces):
@@ -109,6 +113,10 @@ def plot_networks(surfaces,prefix=''):
 #     py.plot(fig,filename=prefix+'networks_q.html')
     
 
+    
+#
+# Simulations
+#
 def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     legends = ['T','p','rho','h']
@@ -203,6 +211,11 @@ def plot_simulations(database,eos_name,prefix=''):
 #     from IPython import embed ; embed()
     return subfig
     
+    
+    
+#
+# Generate a be-all-end-all report
+#
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"
     eoses = [

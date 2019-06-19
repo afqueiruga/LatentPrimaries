@@ -7,7 +7,6 @@ import dash_html_components as html
 import plotly.graph_objs as go
 import dash_table
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_stylesheets = ['https://codepen.io/anon/pen/mardKv.css']
 
 app = dash.Dash(__name__)#, external_stylesheets=external_stylesheets)
@@ -114,7 +113,7 @@ layout = html.Div([
 def update_graph(selected):
     if selected is None: selected = []
     ctx = dash.callback_context
-    figure = ls_plot.plot_networks({k:surfs[k] for k in selected})
+    figure = ls_plot.plot_networks({k:surfs[k] for k in selected if k in surfs.keys()})
     return figure
     
     
