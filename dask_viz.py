@@ -34,8 +34,9 @@ else:
 
 # Configure the eos hub
 hub = "/Users/afq/Google Drive/networks/"
+# TODO: read this from list dir
 eoses = [
-        "water_slgc_logp_64",
+        "water_slgc",
         "water_lg",
         "water_linear",
 ]
@@ -51,26 +52,41 @@ def get_it_all(eos):
     all_archs = os.listdir(directory)
     return all_archs, table, surfs
 
-all_archs, archs_table, surfs = get_it_all(eos)
-
+all_archs, archs_table, surfs = {}, {}, {}
+for eos in eoses:
+    all_archs[eos], archs_table[eos], surfs[eos] = get_it_all(eos)
+    for row in archs_table[eos]:
+        row["id"]=row["name"]
+    print(archs_table[eos])
 ##
 # trash
-multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected', 
-                                     options=[{'label':k,'value':k} for k in all_archs],
-                                     value=all_archs[0:2], multi=True)],
-                       style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
-             className="row")
+#
 
-@app.callback(
-    [Output('datatable-interactivity-channel', "selected_rows"),],
-    [Input('all-button', 'n_clicks'),],
-    [State('datatable-interactivity-channel', "derived_virtual_data"),]
-)
-def select_all(n_clicks, selected_rows):
-    if selected_rows is None:
-        return [[]]
-    else:
-        return [[i for i in range(len(selected_rows))]]
+# multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected', 
+#                                      options=[{'label':k,'value':k} for k in all_archs],
+#                                      value=all_archs[0:2], multi=True)],
+#                        style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
+#              className="row")
+
+# @app.callback(
+#     [Output('datatable-interactivity-channel', "selected_rows"),],
+#     [Input('all-button', 'n_clicks'),],
+#     [State('datatable-interactivity-channel', "derived_virtual_data"),]
+# )
+# def select_all(n_clicks, selected_rows):
+#     if selected_rows is None:
+#         return [[]]
+#     else:
+#         return [[i for i in range(len(selected_rows))]]
+    
+# dcc.Slider(
+#     min=-5,
+#     max=10,
+#     step=0.5,
+#     value=-3,
+# )
+
+#
 # end trash
 ##
 
@@ -81,13 +97,11 @@ eos_dropdown = dcc.Dropdown(id='eos-selected',
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
 columns.append("id")
-for row in archs_table:
-    row["id"]=row["name"]
-print(archs_table)
+
 table = dash_table.DataTable(
     id = "select-table",
-    columns = [{"name":k,"id":k} for k in columns], #[{"name": "Name","id":"id"}],
-    data = archs_table, #[{"name":k,"id":k} for k in all_archs],
+    columns = [{"name":k,"id":k} for k in columns],
+    #data = None, #filled by callback
     row_selectable = "multi",
     sorting=True,
     sorting_type="multi",
@@ -98,23 +112,31 @@ table = dash_table.DataTable(
 layout = html.Div([
     html.Div([
         html.Div([dcc.Markdown("# EOS:")],className="two columns"),
-        html.Div([eos_dropdown],className="two columns"),
+        html.Div([eos_dropdown],className="ten columns"),
     ],className="row"),
-    html.Div([
-        html.Div(dcc.Graph(id="3d-graph"),className="eight columns"),
-        html.Div(table,className="four columns"),
-    ],className="row"),
-    
+    dcc.Graph(id="3d-graph"),
+    table,
 ], className="row")
 
 # Callbacks
+# EOS selector refreshes the table
+@app.callback(
+Output("select-table","data"),[Input("eos-selected",'value')])
+def update_table(eos):
+    print("Selected ",eos)
+    return archs_table[eos]
+
 @app.callback(
     Output("3d-graph", "figure"),
-    [Input("select-table", "selected_row_ids")])
-def update_graph(selected):
-    if selected is None: selected = []
+    [Input("eos-selected",'value'),Input("select-table", "selected_row_ids")])
+def update_graph(eos,selected):
+    if selected is None: 
+        selected = []
+    print("this callback", eos, selected)
     ctx = dash.callback_context
-    figure = ls_plot.plot_networks({k:surfs[k] for k in selected if k in surfs.keys()})
+    surfs_to_plot = {k:surfs[eos][k] for k in selected if k in surfs[eos].keys()}
+    print(surfs_to_plot)
+    figure = ls_plot.plot_networks(surfs_to_plot)
     return figure
     
     
