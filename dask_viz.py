@@ -42,12 +42,13 @@ eoses = [
 eos = eoses[1]
 def get_it_all(eos):
     "Load the data for a particular EOS into server memory"
+    directory = hub+'training_'+eos
     # Surfaces
-    surfs = ls_plot.read_networks(hub+'training_'+eos)
+    surfs = ls_plot.read_networks(directory)
     surfs.pop('.DS_Store',None) # lol
     # Training and results 
     table = ls_grade.prep_table(eos,hub)
-    all_archs = list(surfs.keys())
+    all_archs = os.listdir(directory)
     return all_archs, table, surfs
 
 all_archs, archs_table, surfs = get_it_all(eos)
