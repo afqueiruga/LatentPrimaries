@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
+import os, glob
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -35,12 +35,13 @@ else:
 # Configure the eos hub
 hub = "/Users/afq/Google Drive/networks/"
 # TODO: read this from list dir
-eoses = [
-        "water_slgc",
-        "water_lg",
-        "water_linear",
-]
-eos = eoses[1]
+eos_dirs = glob.glob(hub+'training_*')
+
+eoses = [ k[(len(hub)+len('training_')):] for k in eos_dirs ]
+#         "water_slgc",
+#         "water_lg",
+#         "water_linear",
+# ]
 def get_it_all(eos):
     "Load the data for a particular EOS into server memory"
     directory = hub+'training_'+eos
@@ -68,16 +69,18 @@ for eos in eoses:
 #                        style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
 #              className="row")
 
-# @app.callback(
-#     [Output('datatable-interactivity-channel', "selected_rows"),],
-#     [Input('all-button', 'n_clicks'),],
-#     [State('datatable-interactivity-channel', "derived_virtual_data"),]
-# )
-# def select_all(n_clicks, selected_rows):
-#     if selected_rows is None:
-#         return [[]]
-#     else:
-#         return [[i for i in range(len(selected_rows))]]
+button = html.Button('Select All', id='my-button')
+@app.callback(
+    [Output('select-table', "selected_rows"),],
+    [Input('my-button', 'n_clicks'),],
+    [State('select-table', "derived_virtual_data"),]
+)
+def select_all(n_clicks, selected_rows):
+    if selected_rows is None:
+        return [[]]
+    else:
+        if len(selected_rows)==0:
+            return [[i for i in range(len(selected_rows))]]
     
 # dcc.Slider(
 #     min=-5,
@@ -96,7 +99,7 @@ eos_dropdown = dcc.Dropdown(id='eos-selected',
 
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
-columns.append("id")
+# columns.append("id")
 
 table = dash_table.DataTable(
     id = "select-table",
@@ -115,6 +118,7 @@ layout = html.Div([
         html.Div([eos_dropdown],className="ten columns"),
     ],className="row"),
     dcc.Graph(id="3d-graph"),
+    button,
     table,
 ], className="row")
 
@@ -135,7 +139,7 @@ def update_graph(eos,selected):
     print("this callback", eos, selected)
     ctx = dash.callback_context
     surfs_to_plot = {k:surfs[eos][k] for k in selected if k in surfs[eos].keys()}
-    print(surfs_to_plot)
+    # print(surfs_to_plot)
     figure = ls_plot.plot_networks(surfs_to_plot)
     return figure
     
