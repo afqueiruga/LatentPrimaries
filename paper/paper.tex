@@ -2,13 +2,14 @@
 \PassOptionsToPackage{hyphens}{url}
 %
 \documentclass[]{article}
-\usepackage{lmodern}
-\usepackage{amssymb,amsmath}
-\usepackage{ifxetex,ifluatex}
-\usepackage{chemmacros}
-\usepackage{natbib}
-\usepackage{lineno}
 \usepackage[margin=1in]{geometry}
+\usepackage{amssymb,amsmath}
+\usepackage{chemmacros}
+\usepackage{siunitx}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\usepackage[numbers]{natbib}
+\usepackage{lineno}
 \usepackage{fixltx2e} % provides \textsubscript
 \ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
   \usepackage[T1]{fontenc}
@@ -123,13 +124,12 @@
 
 
 
-% set default figure placement to htbp
-\makeatletter
-\def\fps@figure{htbp}
-\makeatother
+% \makeatletter
+% \def\fps@figure{tbph}
+% \makeatother
 
 
-\title{Solution of Differential Algebraic Equations with Manifold Constraints
+\title{Solution of Differential Algebraic Equations with Local Constraints
 on the Latent Space of an Autoencoder}
 \author{Alejandro Francisco Queiruga}
 \date{\today}
@@ -139,8 +139,7 @@ on the Latent Space of an Autoencoder}
 \begin{abstract}
   Multiphase simulation is hard.
 
-Our
-proposed method is motivated by the problems of multiphase reaction and
+Our proposed method is motivated by the problems of multiphase reaction and
 transport, where the underlying constraints are the ill-behaved material
 properties which are difficult to describe.
   
@@ -175,20 +174,30 @@ plugged back into the balance laws, eliminating the constraint equation.
 \hypertarget{header-n3216}{%
 \section{Introduction}\label{header-n3216}}
 
-Representing complex physical systems with multiple speicies, phases,
+Representing complex physical systems with multiple species, phases,
 chemical reactions, and heterogenous scale effects poses an
 intractability problem to modeling. How do we analyze complex
 experimental data and \emph{ab initio} simulations and derive new
 macroscale relations to describe the systems? How do we then implement
 these relations in the rest of our analyses and production-scale
-computer simulations?
-
+computer simulations
 Accurately simulating multispecies reaction and transport with
 undergoing phase transitions is a critical aspect to a variety of
 problems.
 This work is motivated by advancing simulation techniques for subsurface energy systems such as shale
 and oceanic natural gas reservoirs in shales or engineered geothermal
 systems.
+
+Our fundamental goal is to develop the tools
+for unsupervised representation learning in way where the
+representations have physical and useful meaning.
+How can we find a latent space that is good for our tasks?
+How can we find regressions in a deep learning context of high enough
+accuracy with needed qualities?
+How do we include these types of machine-generated models into a
+scientific and engineering calculation without sacrificing accuracy?
+Can this improve our workflow?
+Can we then find paths in the learned space that follow physical laws?
 
 
 The system of equations we are looking at are, for only two components,
@@ -278,6 +287,12 @@ it can be effectively solved and then \emph{decoded} back to the
 physically meaningful quantities.
 
 % {\bf ML LIT REVIEW HERE} % TODO
+Representation learning methods such as StyleGAN and G|FLOW have shown
+the ability to find meaningful dimensions in the latent space,
+e.g. the popular ability to transform age, race, and gender of human
+faces in a smooth way.
+But, can this directions be used meaningfully?
+
 \cite{wu_physics-informed_2018}
 \cite{xie_tempogan:_2018}
 
@@ -360,17 +375,8 @@ the implementation details.
 
 \section{Multiphase Equations of State}
 
-% \begin{figure}
-%    CSTR
-%   \caption{ \label{fig:cstr} Illustration of the Continuous stirred-tank
-%   reactor. The material in the reactor is exposed to a reservoir with pressure
-%   $p_\inf$ and temperature $T_\inf$ via a conduit with permeability
-%   and thermal conductivities $k_p$ and $k_T$, direct forced mass
-%   injection/withdrawl $r$, or heating and cooling $s$.}
-% \end{figure}
-
 For this preliminary work, we consider only a single-beaker problem
-without flow, a continuous stirred-tank reactor (CSTR), as illustrated
+without flow, the idealization of the continuous stirred-tank reactor (CSTR), as illustrated
 in Figure \ref{fig:cstr}. Let \(\rho\) be the material density, \(T\) be the
 temperature, \(p\) be the material pressure, \(h\) be the material
 enthalpy, and \(u\) be the internal energy. There are two equations for
@@ -388,6 +394,23 @@ sources and sinks are the terms \(r\) and \(s\).\footnote{We express the
   with internal energy.}
 We are neglecting upstreaming in the connection between the reservoir
 and the container.
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=3in]{../slides/cstr.png}
+  \caption{ \label{fig:cstr} Illustration of the Continuous
+    Stirred-Tank    
+  Reactor. The material in the reactor is exposed to a reservoir with
+  pressure
+  $p_\infty$ and temperature $T_\infty$ via a conduit with permeability
+  and thermal conductivities $k_p$ and $k_T$, direct forced mass
+  injection or withdrawal $r$ via a pump, or heating and cooling $s$
+  via a heater/heat-exchanger. Stirring and insulation keeps the
+  material at a uniform pressure and temperature. Gravity is
+  neglected (though is usually the motivation for putting a feeding inlet at
+the top and product outlet at the bottom.)}
+\end{figure}
 
 We also consider the phase equilibria: beyond the scale of resolving
 individual bubbles, it is possible
@@ -417,22 +440,41 @@ Phase transitions occur when the thermodynamic free energy of a system
 is non-analytic for some choice of thermodynamic variables (cf. phases).
 \end{quote}
 
+
+{\bf Remark:} This interpretation breaks down with the existenceof super-saturated phases in non-stable regions: e.g., it is possible to
+heat water beyond it's boiling point in a microwave. We are concerned
+with environments where this would not happen (the very rough and
+heterogenous) pores of rocks, so we have not thought of how to
+integrate this problem.
+
+\subsection{Forms of Equations of State}
+
+This work focuses on the EOS of pure water. The most accurate
+formulations were developed by the International Association for the
+Properties of Water Steam (IAPWS) using a variety of experimental
+sources for multiple phases \cite{wagner_iapws_2000,
+  water_revised_2007, water_revised_2009}. We utilize the 1997
+formulation for water gas, liquid, and supercritical phases, and the
+2006 formulation for the Ice Ih phase to build the dataset.\footnote{Our
+implementation is publicly available at GITHUB:EOS.} (Their
+painstaking work in determining the forms of decent fits is a great
+motivation for a 21st century approach.)
 We can also assemble the surface of possible $T,p,\rho$ coordinates,
 shown in Figure \ref{fig:pTrho}.
 \begin{figure}
 \centering
-\includegraphics[width=4in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/figures/phase_diagram.png}
+\includegraphics[width=4in]{../figures/phase_diagram.png}
 \caption{\label{fig:phaseboundaries}Phase boundaries for water on the $T-p$ diagram. The standard
 interpretation is that the properties of the material change
 drastically when crossing this boundary. Note how it is possible to form a path from a
 definitively gas state to a definitively liquid state without crossing
 a phase boundary. The supercritical regime has no clear boundaries,
-but requires a seperate curve fit in practice due to numerical challenges.}
+but requires a separate curve fit in practice due to numerical challenges.}
 \end{figure}
 
 \begin{figure}
 \centering
-\includegraphics[width=4in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/figures/water_eos.png}
+\includegraphics[width=4in]{../figures/water_eos.png}
 \caption{\label{fig:pTrho} The $\log{p}$, $T$, $\rho$ equation of
   state surface for water in units of $\log{\text{Pa}}$, K, and \si{}{kg/m$^2$} This plot spans four phases, three
   equilibria, and the triple point, which are each given their own color.
@@ -442,23 +484,52 @@ but requires a seperate curve fit in practice due to numerical challenges.}
   generated dataset used for the optimization)}
 \end{figure}
 
-{\bf Remark:}There are even more known phases of crystal ice which for water
+
+{\bf Remark:} There are even more known phases of crystal ice which for water
 For water, the supercritical phase and exotic ices only occur in
 laboratory conditions or naturally near the
 crust \cite{}. For our case, we only handle the Ice I and cutoff the
 regime at \si{10^8}{Pa}. For other materials these exotic phases can be
-applicable. For example, in geoengineered systems using $CO_2$
+applicable. Methane $CH_4$ is actually well beyond its supercritical
+point at T=\si{-82.59}{C}\cite{the_engineering_toolbox_methane_2008}, so only an appropriate gas law can do the trick, until
+the bi-species hydrate phase comes into play.
+The liquid-gas-equilibrium-supercritical state transition comes into
+play in, for example, in geoengineered systems using $CO_2$
 such as geothermal plants are carbon sequestration facilities, the
-working fluid is usually in the supercritical regime at depth. cite
+working fluid is often in the supercritical regime at depth, and the
+phase boundary. cite
 curt. cite hydrates.
 When binary mixtures are involved, the number of possible phases and
 equilibria increases again.
 
-{\bf Remark:} This interpretation breaks down with the existenceof super-saturated phases in non-stable regions: e.g., it is possible to
-heat water beyond it's boiling point in a microwave. We are concerned
-with environments where this would not happen (the very rough and
-heterogenous) pores of rocks, so we have not thought of how to
-integrate this problem.
+
+{\bf Remark:} Many popular forms of EOS do not even have closed form
+expressions. The family of cubic equations of state for nonideal
+gases, such as a Peng-Robinsion equation \cite{peng_new_1976}, are
+expressed as functions for $p$ of $V$ (a proxy for $\rho$) and
+$T$. Since $\rho$ is rarely a primary varibale, these expressions must be inverted for
+$\rho$ given $p$ by solving the cubic equation. This can be performed
+analytically, as is done in TOUGH+, but often polynomial roots can
+be best solved numerically. When the equations become more
+complicated, such as when there are gas mixtures, the equations of
+state must be solved numerically. TOUGH+ employs a Richardson
+iteration \cite{moridis_users_2014-2}.
+Note how this is a numerical
+iteration {\em inside} of another numerical iteration that is trying
+to differentiation this equation state. Approximations
+abound--the mathematical theory is not straight foward. Passing
+automatic differentiation objects through these computations is
+difficult in practice. Equations are
+often solved faster and more accurately by numerical
+approximations--why not completely rewrite the equations?
+
+{\bf Remark:} The relations inside of EOSes are often artificially
+smoothed. For example, the hydrate equilibrium surface has a kink at
+the ice-liquid phase boundary in water. This causes problems
+numerically when a material state is moving along this equilibrium, so
+it is artificially smoothed using splines or the hyperbolic tangent to
+improve convergence in TOUGH+Hydrate \cite{moridis_users_2014}. Approximations abound. 
+
 
 \hypertarget{header-n3253}{%
 \subsection{State Machine logic}\label{header-n3253}}
@@ -472,7 +543,7 @@ the DAE for \(p\) and \(T\) implicitly:
 \partial_t \rho(p,T) & = \nabla \cdot \mathbf{k}\nabla p + r\\
 \partial_t \rho u(p,T) & = \nabla \cdot \mathbf{k'}\nabla T + s
 \end{align}
-The complicatation is that the functions \(\rho(p,T)\) and \(u(p,T)\)
+The complication is that the functions \(\rho(p,T)\) and \(u(p,T)\)
 are not well defined functions due to the presence of phase changes that
 yield sharp discontinuities in \(p,T\), as shown in Figure 1 for
 water.
@@ -494,7 +565,8 @@ water.
 
   This requires a statemachine. For the complete states of water, it is shown in Figure \ref{fig:statemachine}.
   \begin{figure}
-    \includegraphics[width=4in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/phase_4.png}
+    \centering
+    \includegraphics[width=4in]{../slides/phase_4.png}
     \caption{\label{fig:statemachine}States and possible transitions for water.}
 \end{figure}
 Formulate balance equations as
@@ -635,7 +707,7 @@ method:
 Soltutions are shown in Figure \ref{fig:pendulum}.
 \begin{figure}
 \centering
-\includegraphics[width=5in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/figures/pendulum_q.png}
+\includegraphics[width=5in]{../figures/pendulum_q.png}
 \caption{\label{fig:pendulum}Solution of the pendulum on an arbitrary latent space.}
 \end{figure}
 
@@ -773,6 +845,14 @@ of 1. The random initialization part is decided by
 \hypertarget{header-n3317}{%
 \subsection{Unsupervised Phase Classification}\label{header-n3317}}
 
+
+\begin{figure}
+\centering
+\includegraphics{../slides/classifier_network.png}
+\caption{\label{fig:classifyingnetwork}The architecture of the classifier network designed for
+  unsupervised labeling of phases.}
+\end{figure}
+
 The architecture is illustrated in Figure \ref{fig:classifyingnetwork}.
 It has the following form in index notation:
 \begin{align}
@@ -795,19 +875,13 @@ a softmax,
 \end{equation}
 or, in the limit, the hard argmax:
 \begin{equation}
-\sigma_i \rightarrow \text{onehot}\arg\max z as  \beta\rightarrow\infty
+\sigma_i \rightarrow \text{onehot}\arg\max z \quad as\quad  \beta\rightarrow\infty
 \end{equation}
 
-\begin{figure}
-\centering
-\includegraphics{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/classifier_network.png}
-\caption{\label{fig:classifyingnetwork}The architecture of the classifier network designed for
-  unsupervised labeling of phases.}
-\end{figure}
 
 \begin{figure}
   \centering
-  \includegraphics[width=3in]{/Users/afq/Documents/Dropbox/ML/primaryautoencoder/slides/classifier_good.jpg}
+  \includegraphics[width=3in]{../slides/classifier_good.jpg}
   \caption{\label{fig:classified}Result of the unsupervised phase classifier. Compare this plot to the original labeled dataset Figure \ref{fig:pTrho}.}
 \end{figure}
 Because the identity of the phases,XXXXXXXX
@@ -848,21 +922,22 @@ material representation: the balance laws are expressed directly.
 
 To develop the rest of the discretization, we introduce the compact form:
 \begin{align}
-\frac{\mathrm{d}}{\mathrm{d}t} m(T,p,\rho,h) &= r(T,p,\rho,h)\\
+\partial_t m(T,p,\rho,h) &= r(T,p,\rho,h)\\
 eos(T,p,\rho,h) &= 0
 \end{align}
-where $m=\{\rho,\rho h -p\}$ and $r$ is the right hand side, with no good representation of \(eos\) everywhere.
+where $m=\{\rho,\rho h -p\}$ and $r$ is the right hand side, where
+$eos(T,p,\rho,h)=0$ is the material constraint.
 
 
 The decoder part of the network is inserted into the balance law
 \begin{equation}
-\frac{\mathrm{d}}{\mathrm{d}t} m(D(q)) = r(D(q))
+\partial_t (D(q)) = r(D(q))
 \end{equation}
 We can parameterize this equation with any time stepping scheme, .e.g. a
 Runge-Kutta scheme. For subsurface flow, backward Euler is popular due
 to its simplicity and L-stability, which we follow since the topic of
 this paper is not exploring new time stepping schemes. This yields the
-discretizated algebraic equation for \(q_i\) and \(t+\Delta t\) given the
+discretized algebraic equation for \(q_i\) and \(t+\Delta t\) given the
 value \(q^0\) at \(t\),
 
 \begin{equation}
@@ -1084,6 +1159,51 @@ verifying the training process.
   Pick best one to package into production code
 \end{enumerate}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=6in]{../slides/user_workflow.png}
+  \caption{\label{fig:workflow}Work flow of the simulation programming process.}
+\end{figure}
+This process yields are more complicated simulation software system
+than previous generations. The architecture and workflow from problem
+specification to user experience is illustrated in Figure
+\ref{fig:workflow}.
+Previous generations of simulators were entirely composed of human
+written computer code, with some inline parameters (such as those of
+the IAPWS fits typed into constants in dedicated fortran files)
+fits and the occasional parameter files that are fed into the system
+as inputs (such as reaction rates databases.)
+Now, the behavior of the software is not only defined by the human
+written code, it is also defined by the model it loads, and the
+dataset that produced it.
+
+In our vision, the theoretician or experimentalist specify a dataset
+defined the possible states of the material. Multiple architectures
+are trained using the autoencoder unsupervised representation learning
+goal. Then, the simulation is ran by loading in each of the models and tested against known problems that
+span the problem space. Some of the tests are written by the original
+developers, and some of them must be specified by the scientist to
+pass through the newly added physical regimes.
+This testing process detects models that may have faired well in the
+ML process and produced low values of the loss function on testing and
+validation, but cannot be actually used in the simulation.
+This testing process is also used to determine the model that is
+optimal in terms of compute time and satisfactorily accurate.
+The ``best'' model can then be ``shipped'' (i.e., marked for
+deployment in DVC) to be automatically selected by the final end user,
+who only specifies the Equation of State.
+
+What is not shown in this figure is the testing of the data, and the
+testing of the simulation framework, which are needed in a
+fully-fledged machine learning based software system \cite{google ML smells}.
+Testing of the data is performed before the simulation
+methodology. These are contained in the Equations\_Of\_State package in our case, and would
+need to be performed by the theoretician and experimentalist feed-side
+users.
+Integration testing of the train-deploy-load-simulation framework is
+performed using the linear equation of state as a trivial test dataset
+with a trivial linear model. 
+
 \hypertarget{header-n3353}{%
 \subsection{Pseudo-code}\label{header-n3353}}
 
@@ -1098,7 +1218,60 @@ decode s[i] = D(q[i])
 \end{verbatim}
 
 \hypertarget{header-n3356}{%
-\section{Implementation}\label{header-n3356}}
+\section{Architecture}\label{header-n3356}}
+
+The use of ML models yields a new software structure paradigm. It is now much simpler to implement new equation of state modules in
+the simulation package, but managing the datasets and models adds
+another layer to the software management. The high-level architecture
+and low-level implementation details developed for the prototype
+LatentSim are described in this section.
+
+LatentSim is implemented entirely in Python 3 using the 
+
+The original datasets are written out as .csv files. To prep the
+datasets, the numbers are scaled to a zero-centered unit-range, shuffled, and broken up into the
+2/3-1/6-1/6 subdivisions for train, test, and validate subsets. The
+sets are stored as simple .npy files, with an accompanying short csv file
+for the scaling (which is loaded by the simulation to de-scale the
+network outputs.)
+
+
+The ``hub'' has a directory structure:
+\begin{verbatim}
+  1. training\_[EOS]
+    - One folder per architecture
+      - MonitoredTraningSession checkpoints
+      - Tensorboard summaries
+      - .csv 3d plot renderings
+    - More architectures...
+  2. training\_[other EOS]...
+  3. test\_database
+    - One sqlite file per EOS containing all tests
+  4. report
+    - static renderings (superseded by Dash app)
+\end{verbatim}
+The code has the following structure:
+\begin{verbatim}
+  1. sources for data
+  2. prepped data\_files
+  3. reference solutions for testing
+  4. training code
+  5. LatentSim.py
+  6. testing code
+  7. Dash app
+\end{verbatim}
+For every EOS, there are multiple generated implementations.
+After using a combination of Tensorboard, [] Visdom, [] and Paraview [] during
+development, a custom Dash [] web interface was ultimately developed
+to asses the results. A screenshot interface is shown in Figure []. The
+interface allows the developer (i.e., the author) to browse all
+statistics, renderings, of the trained surfaces and their test
+problems.
+
+In the version of the software distributed to users, only one
+``frozen'' and optimized model needs to be included per equation of state.
+
+\subsection{Implementation details}
 
 The training framework and simulations are implemented in TensorFlow 
 using custom defined operations. The various visualizations are built
@@ -1106,13 +1279,21 @@ using Matplotlib, Plotly, and Visdom. The accompanying video was
 generated using Paraview.
 
 The codebase is released open source at
-\url{https://github.com/afqueiruga/latentsim}. Helper methods and
+\url{https://github.com/afqueiruga/latentsim}. Datasets and other
+presentation artifacts such as videos and interactive plots are stored
+in git-lfs. Helper methods and
 custom optimizers that the
 author reuses in various TensorFlow-based projects are factored out in
 the dully-named \url{https://github.com/afqueiruga/afqstensorflowutils}.
 The implementation of the empirical equations of state for water are
 factored out at
 \href{https://github.com/afqueiruga/equations_of_state}{https://github.com/afqueiruga/equations\_of\_state}.
+
+\subsection{Things we'll do differently}
+
+Adopt julia for at least the simulation
+
+
 
 \hypertarget{header-n3359}{%
 \section{Simulation Evaluation}\label{header-n3359}}
@@ -1228,7 +1409,7 @@ model architectures and tricks for initializing the networks.
 
 We can also think about this work as offline preconditioning.
 
-In TOUGH, for one instance, all of the calculations are performed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propogation occur, especially because numerical differentiation is used.
+In TOUGH, for one instance, all of the calculations are performed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propagation occur, especially because numerical differentiation is used.
 The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically non-dimensionalize the entire problem.
 
 The larger simulation code links into the trained database to load the
@@ -1243,9 +1424,9 @@ In a mature code, the name of the architecture loaded would be hidden
 from the end-user and would be a setting which the doman scientist and developer freezes
 after checking the training process.
 
-Techniquessuch as L1 regularization would be needed to search for low
+Techniques such as L1 regularization would be needed to search for low
 cost models that also satisfy our desire for Occam's razor
-simplifications. (The IAPWS relations used a prelimary form of this
+simplifications. (The IAPWS relations used a preliminary form of this
 type of simplification, but are not optimal in the author's opinion.)
 
 A fully automated testing system can verify which realizations worked
