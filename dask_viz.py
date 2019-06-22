@@ -73,15 +73,16 @@ button = html.Button('Select All', id='my-button')
 @app.callback(
     [Output('select-table', "selected_rows"),],
     [Input('my-button', 'n_clicks'),],
-    [State('select-table', "derived_virtual_data"),]
+    [State('select-table', "derived_virtual_data"),
+     State('select-table', "derived_virtual_selected_rows"),]
 )
-def select_all(n_clicks, selected_rows):
+def select_all(n_clicks, all_rows, selected_rows):
     if selected_rows is None:
         return [[]]
     else:
         print(selected_rows)
         if len(selected_rows)==0:
-            return [[i for i in range(len(selected_rows))]]
+            return [[i for i in range(len(all_rows))]]
         else:
             return [[]]
     

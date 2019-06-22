@@ -29,7 +29,9 @@ def make_tri_plot(x,y,z, simplices, c=None, offset=(0,0), name='', **kwargs):
     return go.Mesh3d(x=x+d_off*offset[0],y=y,z=z+d_off*offset[1],
                      i=simplices[:,0],j=simplices[:,1],k=simplices[:,2],
                      intensity=c/np.max(c),
-                     name=name,showscale = True,**kwargs)
+                     name=name,showscale = True,
+                     colorscale='Jet',
+                     **kwargs)
 
 def plot_ptrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,0],D[:,1],D[:,2], simplices, c=D[:,colorby],
