@@ -13,12 +13,12 @@ app = dash.Dash(__name__)#, external_stylesheets=external_stylesheets)
 app.css.append_css({
     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
 })
-theme =  {
-    'dark': True,
-    'detail': '#007439',
-    'primary': '#00EA64',
-    'secondary': '#6E6E6E',
-}
+# theme =  {
+#     'dark': True,
+#     'detail': '#007439',
+#     'primary': '#00EA64',
+#     'secondary': '#6E6E6E',
+# }
 
 server = app.server
 app.config.suppress_callback_exceptions = True
@@ -79,8 +79,11 @@ def select_all(n_clicks, selected_rows):
     if selected_rows is None:
         return [[]]
     else:
+        print(selected_rows)
         if len(selected_rows)==0:
             return [[i for i in range(len(selected_rows))]]
+        else:
+            return [[]]
     
 # dcc.Slider(
 #     min=-5,

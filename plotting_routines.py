@@ -95,16 +95,19 @@ def generate_trisurf_plots(surfaces):
     return [ (n,go.Figure(data=[plot_ptrho(d,simp,name=n)]))
              for n,(d,simp) in surfaces.items() ]
 
-def plot_networks(surfaces,prefix=''):
+def plot_networks(surfaces,prefix='',aspectratio=1):
     offs = range(int(np.ceil(len(surfaces)**0.5)))
     offsets = list(itertools.product(offs,offs))
     
-    ptrhos = [ plot_ptrho(d,simp,offset=o,name=n)
+    ptrhos = [ plot_ptrho(d,simp,offset=(o[1],o[0]),name=n)
                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
-    annotes = [ dict(text=n,x=d_off*o[0],y=0,z=d_off*o[1])
-              for n,o in zip(surfaces,offsets)]
+    annotes = [ dict(text=n,x=d_off*o[1],y=0,z=d_off*o[0])
+                for n,o in zip(surfaces,offsets) ]
     fig = go.Figure(data=ptrhos,
-                    layout=go.Layout(scene=dict(annotations=annotes)) )
+                    layout=go.Layout(
+                        scene=dict(annotations=annotes,
+                                   aspectmode='data'),
+                        margin=dict(r=5, l=5,b=5, t=5)) )
     return fig
 
 #     qqrhos = [ plot_qqrho(d,simp,offset=o,name=n) 
@@ -181,12 +184,12 @@ def plot_simulations(database,eos_name,prefix=''):
     gridy = int(numproblems / gridx)+1
     positions = list(itertools.product(range(1,gridx+1),range(1,gridy+1)))
 
-#     titles, titles_trans = [], range(4*gridx*gridy)
-#     for prob in problems:
-#         titles.extend([prob[0]] + ['_' for _ in range(4-1) ])
-#     for i in range(4*gridx):
-#         for j in range(gridy):
-#             titles_trans[j*4*gridx+i] = titles[4*i*gridy+j]
+    #     titles, titles_trans = [], range(4*gridx*gridy)
+    #     for prob in problems:
+    #         titles.extend([prob[0]] + ['_' for _ in range(4-1) ])
+    #     for i in range(4*gridx):
+    #         for j in range(gridy):
+    #             titles_trans[j*4*gridx+i] = titles[4*i*gridy+j]
     titles = ['' for _ in range(4*gridx*gridy)]
     for p,pos in zip(problems,positions):
         #titles[4*gridx*(pos[1]-1)+(pos[0]-1)+1] = p[0]
@@ -208,7 +211,7 @@ def plot_simulations(database,eos_name,prefix=''):
                                    showlegend=showleg[n])
                 showleg[n]=False
                 subfig.append_trace(trace,4*(pos[0]-1)+i+1,pos[1])
-#     from IPython import embed ; embed()
+    # from IPython import embed ; embed()
     return subfig
     
     
