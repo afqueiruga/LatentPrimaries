@@ -149,9 +149,9 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                     newtstep(sess)
                 else:
                     ae.update_beta(sess,inc=0.1)
-
-                    print("loop:",sess.run([ae.goal_all,ae.train_step]
-                                       +list(ae._get_hess_vars())) )
+                    sess.run(ae.train_step)
+#                     print("loop:",sess.run([ae.goal_all,ae.train_step]
+#                                        +list(ae._get_hess_vars())) )
                     # increment beta
                     #try:
                 i+=1

@@ -28,7 +28,7 @@ def list_files(fpattern):
 def make_tri_plot(x,y,z, simplices, c=None, offset=(0,0), name='', **kwargs):
     return go.Mesh3d(x=x+d_off*offset[0],y=y,z=z+d_off*offset[1],
                      i=simplices[:,0],j=simplices[:,1],k=simplices[:,2],
-                     intensity=c/np.max(c),
+                     intensity=(1.0*c)/np.max(1.0*c),
                      name=name,showscale = True,
                      colorscale='Jet',
                      **kwargs)
