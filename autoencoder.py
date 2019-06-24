@@ -127,7 +127,12 @@ class Autoencoder(object):
         except KeyError:
             print("Making ",name)
             if not initial_value is None:
-                ini = tf.constant(initial_value,dtype=self.dtype) + tf.truncated_normal(shape=shape,
+                padded_ini = np.pad(initial_value,
+                                   [[0,shape[0]-initial_value.shape[0]],
+                                    [0,0]],'constant')
+                print(initial_value)
+                print(padded_ini)
+                ini = tf.constant(padded_ini,dtype=self.dtype) + tf.truncated_normal(shape=shape,
                        stddev=stddev, dtype=self.dtype)
             else:
                 ini = tf.truncated_normal(shape=shape,
@@ -238,13 +243,13 @@ class DeepPolyAutoencoder(Autoencoder):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
         nxt = atu.polyexpand(x, self.Np_enc)
         nxt = self._layers(nxt, self.enc_layers + [self.size_q], prefix="enc")
-        return tf.identity(nxt)
+        return tf.identity(nxt, name=name)
     
     def decode(self, q, name=None):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         nxt = atu.polyexpand(q, self.Np_dec)
         nxt = self._layers(nxt, self.dec_layers + [self.size_x], prefix="dec")
-        return tf.identity(nxt)
+        return tf.identity(nxt, name=name)
     
     
 class ClassifyingPolyAutoencoder(Autoencoder):
@@ -290,7 +295,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         W = self._var("enc_W", (N_coeff, self.size_q), 
                      initial_value=encoder_init_options[self.encoder_init])
         b = self._var("enc_b", (self.size_q,) )
-        return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b)
+        return tf.add(tf.matmul( atu.polyexpand(x, self.Np_enc), W ), b, name=name)
     
     def classify(self, q, name=None, phase_act="softmax"):
         qpoly = atu.polyexpand(q, self.Np_dec)
