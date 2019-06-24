@@ -143,6 +143,13 @@ eoses = {
         problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G','Transition_L2G_Drain'
                      'Liquid_Drain']
     ),
+     'water_iapws_lg_logp':dict(
+        scale_file = "data_files/water_iapws_lg_ranges.csv",
+        logp=False,
+        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',
+                      'Transition_L2G_Drain'
+                     'Liquid_Drain','Hot_Gas_Fill']
+    ),
     'water_linear':dict(
         scale_file = "data_files/water_linear_ranges.csv",
         logp=False,
