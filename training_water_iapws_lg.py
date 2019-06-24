@@ -5,7 +5,7 @@ if __name__=="__main__":
     else:
         data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
     dataset = "water_iapws_lg_scaled"
-    eosname = "water_iapws_lg_tighter"
+    eosname = "water_iapws_rh_lg"
 #     caes = [ 0.0, 1.0 ]
     inis = [ 'rand','pT', 'rhoh' ]
     caes = [ 0.0, ]

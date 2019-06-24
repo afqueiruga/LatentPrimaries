@@ -4,7 +4,8 @@ if __name__=="__main__":
         data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
     else:
         data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
-    dataset = "water_iapw_logp_scaled"
+    dataset = "water_iapws_slgc_logp_scaled"
+    eosname = "water_iapws_rh_slgc_logp"
 #     caes = [ 0.0, 1.0 ]
     inis = [ 'rand','pT', 'rhoh' ]
     caes = [ 0.0, ]
@@ -20,7 +21,7 @@ if __name__=="__main__":
         {'type':'Classifying','args':[2,4, 12,24,'sigmoid']},
         {'type':'Classifying','args':[2,5, 12,24,'sigmoid']},
         {'type':'Classifying','args':[2,6, 18,36,'sigmoid']},
-        #{'type':'Classifying','args':[2,6, 24,48,'sigmoid']},
+        {'type':'Classifying','args':[2,6, 24,48,'sigmoid']},
     ]
     sets_to_try = []
     for arch in archs_to_try:
@@ -34,14 +35,14 @@ if __name__=="__main__":
         # Import of tensorflow has to happen *after* forking
         print(S)
         from autoencoder_trainer import train_autoencoder
-        train_autoencoder("water_slgc",dataset, 4,2,S,
+        train_autoencoder(eosname,dataset, 4,2,S,
                           training_dir=training_dir,
                           data_dir = data_dir,
                           n_epoch = n_epoch,
                           image_freq = 50,
                          UseNewt=False)
     if True: # Toggle parallel
-        p = multi.Pool(processes=2)
+        p = multi.Pool(processes=4)
         p.map( job, sets_to_try )
     else:
         for S in sets_to_try:
