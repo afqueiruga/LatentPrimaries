@@ -53,12 +53,17 @@ def get_it_all(eos):
     all_archs = os.listdir(directory)
     return all_archs, table, surfs
 
+
 all_archs, archs_table, surfs = {}, {}, {}
 for eos in eoses:
     all_archs[eos], archs_table[eos], surfs[eos] = get_it_all(eos)
     for row in archs_table[eos]:
         row["id"]=row["name"]
     print(archs_table[eos])
+    
+# Prep the EOS selector table
+columns = ls_grade.table_column_names.copy()
+
 ##
 # trash
 #
@@ -68,8 +73,34 @@ for eos in eoses:
 #                                      value=all_archs[0:2], multi=True)],
 #                        style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
 #              className="row")
+    
+# dcc.Slider(
+#     min=-5,
+#     max=10,
+#     step=0.5,
+#     value=-3,
+# )
 
-button = html.Button('Select All', id='my-button')
+#
+# end trash
+##
+
+
+eos_dropdown = dcc.Dropdown(id='eos-selected',
+                       options=[{'label':k,'value':k} for k in eoses],
+                       value=eoses[1])
+
+select_button = html.Button('Select All', id='my-button')
+graph_radio = dcc.RadioItems(
+    options=[
+        {'label': 'rho', 'value': 'rho'},
+        {'label': 'rho_h', 'value': 'rho_h'},
+        {'label': 'simulations', 'value': 'simulations'}
+    ],
+    value='rho',
+    labelStyle={'display': 'inline-block'}
+)
+
 @app.callback(
     [Output('select-table', "selected_rows"),],
     [Input('my-button', 'n_clicks'),],
@@ -85,25 +116,6 @@ def select_all(n_clicks, all_rows, selected_rows):
             return [[i for i in range(len(all_rows))]]
         else:
             return [[]]
-    
-# dcc.Slider(
-#     min=-5,
-#     max=10,
-#     step=0.5,
-#     value=-3,
-# )
-
-#
-# end trash
-##
-
-eos_dropdown = dcc.Dropdown(id='eos-selected',
-                       options=[{'label':k,'value':k} for k in eoses],
-                       value=eoses[1])
-
-# Prep the EOS selector table
-columns = ls_grade.table_column_names.copy()
-# columns.append("id")
 
 table = dash_table.DataTable(
     id = "select-table",
@@ -114,17 +126,20 @@ table = dash_table.DataTable(
     sorting_type="multi",
     selected_rows=[0,1,2,3])
 
-
+# div macros
+ROW = lambda l : html.Div(l,className="row")
+COL = lambda l, num="one" : html.Div(l,className=num+" columns")
 # The page structure
 layout = html.Div([
-    html.Div([
-        html.Div([dcc.Markdown("# EOS:")],className="two columns"),
-        html.Div([eos_dropdown],className="ten columns"),
-    ],className="row"),
+    ROW([
+        COL([dcc.Markdown("# EOS:")],"two"),
+        COL([eos_dropdown],"ten"),
+    ]),
     dcc.Graph(id="3d-graph"),
-    button,
+    ROW([COL(select_button,"two"),COL([graph_radio],"ten")]),
     table,
 ], className="row")
+
 
 # Callbacks
 # EOS selector refreshes the table
