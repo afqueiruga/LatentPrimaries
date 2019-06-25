@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from collections import namedtuple
 import os, glob
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -34,67 +36,58 @@ else:
 
 # Configure the eos hub
 hub = "/Users/afq/Google Drive/networks/"
-# TODO: read this from list dir
-eos_dirs = glob.glob(hub+'training_*')
 
-eoses = [ k[(len(hub)+len('training_')):] for k in eos_dirs ]
-#         "water_slgc",
-#         "water_lg",
-#         "water_linear",
-# ]
-def get_it_all(eos):
-    "Load the data for a particular EOS into server memory"
-    directory = hub+'training_'+eos
-    # Surfaces
-    surfs = ls_plot.read_networks(directory)
-    surfs.pop('.DS_Store',None) # lol
-    # Training and results 
-    table = ls_grade.prep_table(eos,hub)
-    all_archs = os.listdir(directory)
-    return all_archs, table, surfs
-
-
-all_archs, archs_table, surfs = {}, {}, {}
-for eos in eoses:
-    all_archs[eos], archs_table[eos], surfs[eos] = get_it_all(eos)
-    for row in archs_table[eos]:
-        row["id"]=row["name"]
-    print(archs_table[eos])
+class LazyLoad():
+    "Lazily load the state of all of the eoses"
+    Entry = namedtuple('Entry', ['archs', 'table','surfs'])
+    def __init__(self,hub):
+        eos_dirs = glob.glob(hub+'training_*')
+        self.hub = hub
+        self.eoses = [ k[(len(hub)+len('training_')):] for k in eos_dirs ]
+        self.cache = {}
+        
+    def get_it_all(self,eos):
+        "Load the data for a particular EOS into server memory"
+        directory = self.hub+'training_'+eos
+        # Surfaces
+        surfs = ls_plot.read_networks(directory)
+        surfs.pop('.DS_Store',None) # lol
+        # Training and results 
+        table = ls_grade.prep_table(eos,self.hub)
+        all_archs = os.listdir(directory)
+        for row in table:
+            row["id"]=row["name"]
+        return self.Entry(all_archs, table, surfs)
     
+    def __getitem__(self, key):
+        try:
+            return self.cache[key]
+        except KeyError:
+            rez = self.get_it_all(key)
+            self.cache[key] = rez
+            return rez
+# all_archs, archs_table, surfs = {}, {}, {}
+# for eos in eoses:
+#     all_archs[eos], archs_table[eos], surfs[eos] = get_it_all(eos)
+#     for row in archs_table[eos]:
+#         row["id"]=row["name"]
+#     print(archs_table[eos])
+    
+loaded = LazyLoad(hub)
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
 
-##
-# trash
-#
-
-# multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected', 
-#                                      options=[{'label':k,'value':k} for k in all_archs],
-#                                      value=all_archs[0:2], multi=True)],
-#                        style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
-#              className="row")
-    
-# dcc.Slider(
-#     min=-5,
-#     max=10,
-#     step=0.5,
-#     value=-3,
-# )
-
-#
-# end trash
-##
 
 
 eos_dropdown = dcc.Dropdown(id='eos-selected',
-                       options=[{'label':k,'value':k} for k in eoses],
-                       value=eoses[1])
+                       options=[{'label':k,'value':k} for k in loaded.eoses],
+                       value=loaded.eoses[1])
 
 select_button = html.Button('Select All', id='my-button')
 graph_radio = dcc.RadioItems(
     options=[
-        {'label': 'rho', 'value': 'rho'},
-        {'label': 'rho_h', 'value': 'rho_h'},
+        {'label': '3D rho', 'value': 'rho'},
+        {'label': '3D rho_h', 'value': 'rho_h'},
         {'label': 'simulations', 'value': 'simulations'}
     ],
     value='rho',
@@ -126,11 +119,16 @@ table = dash_table.DataTable(
     sorting_type="multi",
     selected_rows=[0,1,2,3])
 
+
+
+#
+# The page layout
+#
 # div macros
 ROW = lambda l : html.Div(l,className="row")
 COL = lambda l, num="one" : html.Div(l,className=num+" columns")
 # The page structure
-layout = html.Div([
+layout = ROW([
     ROW([
         COL([dcc.Markdown("# EOS:")],"two"),
         COL([eos_dropdown],"ten"),
@@ -138,16 +136,19 @@ layout = html.Div([
     dcc.Graph(id="3d-graph"),
     ROW([COL(select_button,"two"),COL([graph_radio],"ten")]),
     table,
-], className="row")
+])
 
 
+
+#
 # Callbacks
+#
 # EOS selector refreshes the table
 @app.callback(
 Output("select-table","data"),[Input("eos-selected",'value')])
 def update_table(eos):
     print("Selected ",eos)
-    return archs_table[eos]
+    return loaded[eos].table
 
 @app.callback(
     Output("3d-graph", "figure"),
@@ -157,14 +158,32 @@ def update_graph(eos,selected):
         selected = []
     print("this callback", eos, selected)
     ctx = dash.callback_context
-    surfs_to_plot = {k:surfs[eos][k] for k in selected if k in surfs[eos].keys()}
+    surfs_to_plot = {k:loaded[eos].surfs[k] for k in selected if k in loaded[eos].surfs.keys()}
     # print(surfs_to_plot)
     figure = ls_plot.plot_networks(surfs_to_plot)
     return figure
     
     
 
-
 app.layout = layout
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+
+##
+# trash
+#
+# multi_dropdown = html.Div([html.Div([dcc.Dropdown(id='value-selected', 
+#                                      options=[{'label':k,'value':k} for k in all_archs],
+#                                      value=all_archs[0:2], multi=True)],
+#                        style={"display": "block", "margin-left": "auto", "margin-right": "auto", "width": "60%"})],
+#              className="row")
+# dcc.Slider(
+#     min=-5,
+#     max=10,
+#     step=0.5,
+#     value=-3,
+# )
+#
+# end trash
+##
