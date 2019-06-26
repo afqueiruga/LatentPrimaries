@@ -37,6 +37,10 @@ def plot_ptrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,0],D[:,1],D[:,2], simplices, c=D[:,colorby],
                         offset=offset,name=name,**kwargs)
 
+def plot_pth(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
+    return make_tri_plot(D[:,0],D[:,1],D[:,3], simplices, c=D[:,colorby],
+                        offset=offset,name=name,**kwargs)
+
 def plot_qqrho(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
     return make_tri_plot(D[:,4],D[:,5],D[:,2], simplices, c=D[:,colorby],
                         offset=offset,name=name,**kwargs)
@@ -97,11 +101,14 @@ def generate_trisurf_plots(surfaces):
     return [ (n,go.Figure(data=[plot_ptrho(d,simp,name=n)]))
              for n,(d,simp) in surfaces.items() ]
 
-def plot_networks(surfaces,prefix='',aspectratio=1):
+def plot_networks(surfaces,aspectratio=1, z='rho'):
     offs = range(int(np.ceil(len(surfaces)**0.5)))
     offsets = list(itertools.product(offs,offs))
-    
-    ptrhos = [ plot_ptrho(d,simp,offset=(o[1],o[0]),name=n)
+    if z=='rho':
+        PLT = plot_ptrho
+    else:
+        PLT = plot_pth
+    ptrhos = [ PLT(d,simp,offset=(o[1],o[0]),name=n)
                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
     annotes = [ dict(text=n,x=d_off*o[1],y=0,z=d_off*o[0])
                 for n,o in zip(surfaces,offsets) ]

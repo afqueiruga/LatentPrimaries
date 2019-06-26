@@ -77,6 +77,7 @@ eos_dropdown = dcc.Dropdown(id='eos-selected',
 
 select_button = html.Button('Select All', id='my-button')
 graph_radio = dcc.RadioItems(
+    id='graph-radio',
     options=[
         {'label': '3D rho', 'value': 'rho'},
         {'label': '3D rho_h', 'value': 'rho_h'},
@@ -119,10 +120,11 @@ layout = ROW([
 #
 # Callbacks
 #
-def gen_graph_viewport(eos,selected):
+def gen_graph_viewport(eos,selected,z='rho'):
     surfs_to_plot = {k:loaded[eos].surfs[k] for k in selected if k in loaded[eos].surfs.keys()}
     # print(surfs_to_plot)
-    figure = ls_plot.plot_networks(surfs_to_plot)
+    figure = ls_plot.plot_networks(surfs_to_plot,z=z)
+    figure.layout.template = "plotly_dark"
     return figure
 
 # EOS selector refreshes the table
@@ -156,13 +158,14 @@ def select_all(n_clicks, all_rows, selected_rows):
     Output("3d-graph", "figure"),
     [Input("eos-selected",'value'),
      Input("select-table", "selected_row_ids"),
+     Input("graph-radio","value"),
      ])
-def update_graph(eos,selected):
+def update_graph(eos,selected,radio):
     if selected is None: 
         selected = []
     print("this callback", eos, selected)
     ctx = dash.callback_context
-    figure = gen_graph_viewport(eos,selected)
+    figure = gen_graph_viewport(eos,selected,z=radio)
     return figure
     
     
