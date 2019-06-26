@@ -66,19 +66,11 @@ class LazyLoad():
             rez = self.get_it_all(key)
             self.cache[key] = rez
             return rez
-# all_archs, archs_table, surfs = {}, {}, {}
-# for eos in eoses:
-#     all_archs[eos], archs_table[eos], surfs[eos] = get_it_all(eos)
-#     for row in archs_table[eos]:
-#         row["id"]=row["name"]
-#     print(archs_table[eos])
-    
+
 loaded = LazyLoad(hub)
+
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
-
-
-
 eos_dropdown = dcc.Dropdown(id='eos-selected',
                        options=[{'label':k,'value':k} for k in loaded.eoses],
                        value=loaded.eoses[1])
@@ -93,22 +85,6 @@ graph_radio = dcc.RadioItems(
     value='rho',
     labelStyle={'display': 'inline-block'}
 )
-
-@app.callback(
-    [Output('select-table', "selected_rows"),],
-    [Input('my-button', 'n_clicks'),],
-    [State('select-table', "derived_virtual_data"),
-     State('select-table', "derived_virtual_selected_rows"),]
-)
-def select_all(n_clicks, all_rows, selected_rows):
-    if selected_rows is None:
-        return [[]]
-    else:
-        print(selected_rows)
-        if len(selected_rows)==0:
-            return [[i for i in range(len(all_rows))]]
-        else:
-            return [[]]
 
 table = dash_table.DataTable(
     id = "select-table",
@@ -143,6 +119,12 @@ layout = ROW([
 #
 # Callbacks
 #
+def gen_graph_viewport(eos,selected):
+    surfs_to_plot = {k:loaded[eos].surfs[k] for k in selected if k in loaded[eos].surfs.keys()}
+    # print(surfs_to_plot)
+    figure = ls_plot.plot_networks(surfs_to_plot)
+    return figure
+
 # EOS selector refreshes the table
 @app.callback(
 Output("select-table","data"),[Input("eos-selected",'value')])
@@ -150,21 +132,40 @@ def update_table(eos):
     print("Selected ",eos)
     return loaded[eos].table
 
+# Select All/None button
+@app.callback(
+    [Output('select-table', "selected_rows")],
+    [Input('my-button', 'n_clicks'),],
+    [State('select-table', "derived_virtual_data"),
+     State('select-table', "derived_virtual_selected_rows"),]
+)
+def select_all(n_clicks, all_rows, selected_rows):
+    if selected_rows is None:
+        newrows = [[]]
+    else:
+        print(selected_rows)
+        if len(selected_rows)==0:
+            newrows = [[i for i in range(len(all_rows))]]
+        else:
+            newrows = [[]]
+    #figure = gen_graph_viewport(eos,selected)
+    return newrows
+
+# Select individual graphs
 @app.callback(
     Output("3d-graph", "figure"),
-    [Input("eos-selected",'value'),Input("select-table", "selected_row_ids")])
+    [Input("eos-selected",'value'),
+     Input("select-table", "selected_row_ids"),
+     ])
 def update_graph(eos,selected):
     if selected is None: 
         selected = []
     print("this callback", eos, selected)
     ctx = dash.callback_context
-    surfs_to_plot = {k:loaded[eos].surfs[k] for k in selected if k in loaded[eos].surfs.keys()}
-    # print(surfs_to_plot)
-    figure = ls_plot.plot_networks(surfs_to_plot)
+    figure = gen_graph_viewport(eos,selected)
     return figure
     
     
-
 app.layout = layout
 if __name__ == '__main__':
     app.run_server(debug=True)
