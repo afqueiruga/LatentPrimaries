@@ -72,7 +72,7 @@ class LatentSim():
             x = s
         return self._sess.run(self.o_q, feed_dict={self.i_x:x})
     
-    def find_point(self, T=None, p=None, rho=None, h=None, 
+    def find_point(self, T=None, p=None, rho=None, rho_h=None, 
                    phase=None, under_relax=1.0,verbose=True):
         """Specify only two coordinates and find q!
         
@@ -82,8 +82,8 @@ class LatentSim():
         if self.logp: s0_none[0,1] = np.exp(s0_none[0,1])
         guesses = {
             None: s0_none,
-            "Gas": np.array([[450,1.0e2, 0.00048149,2835269.40]]),
-            "Liquid": np.array([[350,1.0e7,978.09,329726.06]]),
+            "Gas": np.array([[450,1.0e2, 0.00048149, 0.00048149*2835269.40]]),
+            "Liquid": np.array([[350,1.0e7,978.09, 978.09*329726.06]]),
 #             "Solid": np.array([[250,1.0e5,919.87,-379930.33]]),
 #             "Supercritical": np.array([[900,132167913.14,900,2964049.86]])
         }
@@ -104,8 +104,8 @@ class LatentSim():
             if not rho is None:
                 s0[0,2] = rho
                 idcs.append(2)
-            if not h is None:
-                s0[0,3] = h
+            if not rho_h is None:
+                s0[0,3] = rho_h
                 idcs.append(3)
             if len(idcs)>2:
                 raise RuntimeError("LatentSim: You specified too many variables.")
@@ -177,8 +177,8 @@ class LatentSim():
             aii = self.regvar('aii',aii)
             Dt  = self.regvar('Dt',0.1)
 
-            T,p,rho,h = tf.split(self.o_s,4,axis=-1)
-            m,r = self.m_and_r( T,p,rho,h )
+            T,p,rho,rho_h = tf.split(self.o_s,4,axis=-1)
+            m,r = self.m_and_r( T,p,rho,rho_h )
             self.m = m
             self.r = r
             self.lhs = m - Dt*aii*r
@@ -194,7 +194,7 @@ class LatentSim():
         self._vars[name] = tf.Variable(val,dtype=self.dtype)
         return self._vars[name]
     
-    def m_and_r(self, T,p,rho,h):
+    def m_and_r(self, T,p,rho,rho_h):
         """The mass and rate equations. Latent sim will solve:
         d m/ dt = r
         """
@@ -206,11 +206,11 @@ class LatentSim():
         heat_source = self.regvar("heat_source",0.0)
         
         m = tf.concat([rho,
-                       rho*h-p],axis=-1)
+                       rho_h-p],axis=-1)
         mflux = k_p*(p_inf-p)+mass_source
         rate = tf.concat([
             mflux,
-            h*mflux + k_T*(T_inf-T)+heat_source],axis=-1)
+            rho_h/rho*mflux + k_T*(T_inf-T)+heat_source],axis=-1)
         return m, rate
     
     def set_params(self, **kwargs):
