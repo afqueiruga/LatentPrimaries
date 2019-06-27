@@ -29,7 +29,7 @@ def AutoencoderFactory(hyper, outerdim, innerdim, stream_mini, stream_all):
                      *hyper['args'],
                      data_all=stream_all,
                      encoder_init=hyper['ini'],
-                     cae_lambda=hyper['cae'])
+                     cae_lambda=hyper['cae'],)
 
 
 class SaveAtEndHook(tf.train.SessionRunHook):
@@ -54,9 +54,9 @@ class DoStuffHook(tf.train.SessionRunHook):
         return self
     
 def train_autoencoder(name, dataname, outerdim, innerdim, 
-                          hyper=default_hyper,
+                      hyper=default_hyper,
                       training_dir='',data_dir='',n_epoch=5000, image_freq=1500,
-                     UseNewt = True):
+                      UseNewt = True):
     hyperpath = string_identifier(hyper)
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
     newt_freq = n_epoch
@@ -92,7 +92,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         @DoStuffHook(freq=1)
         def printgoalhook(ctx,run_values):
             print(ctx.sessiormn.run(ae.goal_all))
-        stophook = tf.train.StopAtStepHook(num_steps=n_epoch)
+        stophook = tf.train.StopAtStepHook(last_step=n_epoch)
         saverhook = SaveAtEndHook(training_dir+"/final_variables")
         # Make a closure into a hook
         @DoStuffHook(freq=image_freq)
@@ -148,7 +148,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                 if UseNewt and i%(newt_freq)==newt_freq-1:
                     newtstep(sess)
                 else:
-                    ae.update_beta(sess,inc=0.1)
+                    ae.update_beta(sess)
                     sess.run(ae.train_step)
 #                     print("loop:",sess.run([ae.goal_all,ae.train_step]
 #                                        +list(ae._get_hess_vars())) )

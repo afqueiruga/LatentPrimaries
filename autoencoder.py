@@ -269,7 +269,9 @@ class ClassifyingPolyAutoencoder(Autoencoder):
     }
     def __init__(self, size_x, size_q, data, p_enc, 
                  p_dec, N_curve, N_bound,
-                 boundary_activation='tanh', softmax_it=True,
+                 boundary_activation='tanh', 
+                 beta_inc=0.0,
+                 softmax_it=True,
                  data_all=None,
                  encoder_init="rand",
                  cae_lambda=0):
@@ -279,6 +281,7 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.N_curve = N_curve
         self.N_bound = N_bound
         self.boundary_activation = boundary_activation
+        self.beta_inc = 0.0
         self.softmax_it = softmax_it
         self.softmax_beta = tf.Variable(1.0, dtype=data.dtype,
                                         trainable=False)
@@ -362,7 +365,9 @@ class ClassifyingPolyAutoencoder(Autoencoder):
         self.newt_step = ops[0]
         return self.newt_step
 
-    def update_beta(self,session,inc=0.1):
+    def update_beta(self,session,inc=None):
+        if inc==None:
+            inc = self.beta_inc
         bnow = self.softmax_beta.eval(session=session)
         session.run(self.update_beta_op,
                     feed_dict={self.i_beta:bnow+inc})
