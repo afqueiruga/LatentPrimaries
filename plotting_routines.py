@@ -56,12 +56,9 @@ def plot_qq_Tprhoh(D,simplices,colorby=-1,offset=(0,0), name='', **kwargs):
 
     for i in range(4):
         offset_i = (offset[0] + 2*(i%2), offset[1] + 1.25*(i/2))
-        print(offset_i)
         tp = make_tri_plot(D[:,4],D[:,5],D[:,i], simplices, c=D[:,colorby],
                         offset=offset_i,name=name,**kwargs)
-#         subfig.append_trace(tp,1+i%2,1+i/2)
         plts.append(tp)
-    # return subfig
     return plts
 
 def read_all_surfaces(arch_dir):
