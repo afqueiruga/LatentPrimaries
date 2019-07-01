@@ -35,26 +35,41 @@ else:
     app_name = 'dash-text-annotationsplot'
 
 # Configure the eos hub
-hub = "/Users/afq/Google Drive/networks/"
+hubs = [
+    "/Users/afq/Google Drive/networks/",
+    "/Users/afq/Documents/Research/LBNL/eoshub/eoshub/networks/",
+]
 
 class LazyLoad():
     "Lazily load the state of all of the eoses"
     Entry = namedtuple('Entry', ['archs', 'table','surfs'])
-    def __init__(self,hub):
-        eos_dirs = glob.glob(hub+'training_*')
-        self.hub = hub
-        self.eoses = [ k[(len(hub)+len('training_')):] for k in eos_dirs ]
-        self.cache = {}
+    def __init__(self,hubs):
+        self.eoses = []
+        self.cache = {} # Cache processing results
+        self.hubs = {} # Mapping from eos to where to find it
+        for hub in hubs:
+            eos_dirs = glob.glob(hub+'/training_*')
+            eoses = [ k[(len(hub)+len('training_')):] 
+                      for k in eos_dirs ]
+            self.eoses.extend(eoses)
+            for e in eoses:
+                self.hubs[e] = hub
+        print(self.hubs)
         
+    def _eos_dir(self,eos):
+        return self.hubs[eos]+'/training_'+eos
+    
     def get_it_all(self,eos):
         "Load the data for a particular EOS into server memory"
-        directory = self.hub+'training_'+eos
+        directory = self._eos_dir(eos)
         # Surfaces
         surfs = ls_plot.read_networks(directory)
         surfs.pop('.DS_Store',None) # lol
         # Training and results 
-        table = ls_grade.prep_table(eos,self.hub)
+        table = ls_grade.prep_table(eos,self.hubs[eos])
         all_archs = os.listdir(directory)
+        # TODO: Get the simulation results
+        # TODO: Run the simulations in batch
         for row in table:
             row["id"]=row["name"]
         return self.Entry(all_archs, table, surfs)
@@ -67,7 +82,7 @@ class LazyLoad():
             self.cache[key] = rez
             return rez
 
-loaded = LazyLoad(hub)
+loaded = LazyLoad(hubs)
 
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
@@ -80,7 +95,7 @@ graph_radio = dcc.RadioItems(
     id='graph-radio',
     options=[
         {'label': '3D rho', 'value': 'rho'},
-        {'label': '3D rho_h', 'value': 'rho_h'},
+        {'label': '3D rho_h', 'value': 'rho*h'},
         {'label': 'simulations', 'value': 'simulations'}
     ],
     value='rho',
