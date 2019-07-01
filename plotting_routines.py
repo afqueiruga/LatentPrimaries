@@ -120,12 +120,51 @@ def plot_networks(surfaces,aspectratio=1, z='rho'):
 #                for (n,(d,simp)),o in zip(surfaces.items(),offsets) ]
 #     fig = go.Figure(data=ptrhos)
 #     py.plot(fig,filename=prefix+'networks_q.html')
-    
 
-    
+
+
 #
 # Simulations
 #
+def plotly_simulation_t(sims,ref):
+    legends=['T','p','rho','rho*h']
+    subfig = pytools.make_subplots(rows=len(legends),cols=1,
+                              shared_xaxes=True)
+    for i,name in enumerate(legends):
+        trace_ref = go.Scatter(x=ref_arr_prep[:,0],
+                              y=ref_arr_prep[:,i+1],
+                              name='ref',legendgroup='ref',
+                              showlegend=i==0,
+                              line=dict(dash='dash',color=colorkey['ref']))
+        subfig.append_trace(trace_ref,i+1,1)
+        for n,time_series in sims:
+            trace = go.Scatter(x=time_series[:,0],y=time_series[:,i+3],
+                               name=n,legendgroup=n,
+                               line=dict(color=colorkey[n]),
+                               showlegend=i==0)
+            subfig.append_trace(trace,i+1,1)
+    return subfig
+
+
+def plotly_simulations_Tp(sims,ref):
+    from equations_of_state.iapws_boundaries \
+        import plot_boundaries_plotly
+    trace_bound = plot_boundaries_plotly()
+    layout=dict(yaxis=dict(title='log(p)',type='log'),
+            xaxis=dict(title='T'))
+    trace_ref = go.Scatter(x=ref[:,1],
+                       y=ref[:,2],
+                       name='ref',legendgroup='ref',
+                       showlegend=True,
+                       line=dict(dash='dash',color=colorkey['ref']))
+    for n,time_series in sims:
+        trace_num = go.Scatter(x=time_series[:,3],
+                       y=time_series[:,4],
+                       name=n,legendgroup=n,
+                       showlegend=True,
+                       line=dict(color=colorkey[n]))
+    fig = go.Figure(data=trace_bound+[trace_ref,trace_num],layout=layout)
+
 def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     legends = ['T','p','rho','h']
@@ -167,6 +206,7 @@ def plot_pT_simulation(sdb, eos_name, problem, colorkey=None):
     return traces
 
 
+
 def make_simulation_plot_list(database,eos_name):
     colorkey = defaultdict(lambda : next(color_ring))
     sdb = SimDataDB(database)
@@ -175,6 +215,7 @@ def make_simulation_plot_list(database,eos_name):
     plots = [ plot_one_simulation(sdb,eos_name, p[0], colorkey=colorkey) 
              for p in problems ]
     return plots
+
 
         
 def plot_simulations(database,eos_name,prefix=''):
@@ -219,9 +260,9 @@ def plot_simulations(database,eos_name,prefix=''):
                 subfig.append_trace(trace,4*(pos[0]-1)+i+1,pos[1])
     # from IPython import embed ; embed()
     return subfig
-    
-    
-    
+
+
+
 #
 # Generate a be-all-end-all report
 #
