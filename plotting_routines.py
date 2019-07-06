@@ -14,6 +14,7 @@ import plotly.figure_factory as FF
 from SimDataDB import SimDataDB
 
 color_ring = itertools.cycle(['black','orange','purple','red','blue','green'])
+colorkey = defaultdict(lambda : next(pr.color_ring)) # It should be global, no?
 d_off = 2.0
 
 def list_files(fpattern):
@@ -126,30 +127,29 @@ def plot_networks(surfaces,aspectratio=1, z='rho'):
 #
 # Simulations
 #
-def plotly_simulation_t(sims,ref):
+def plotly_simulation_t(sims,ref, showleg = False):
     legends=['T','p','rho','rho*h']
-    subfig = pytools.make_subplots(rows=len(legends),cols=1,
-                              shared_xaxes=True)
+    traces = []
     for i,name in enumerate(legends):
         trace_ref = go.Scatter(x=ref_arr_prep[:,0],
                               y=ref_arr_prep[:,i+1],
                               name='ref',legendgroup='ref',
-                              showlegend=i==0,
+                              showlegend= (i==0 and showleg),
                               line=dict(dash='dash',color=colorkey['ref']))
-        subfig.append_trace(trace_ref,i+1,1)
-        for n,time_series in sims:
+        traces.append((trace_ref,i+1))
+        for n,time_series in sims.items():
             trace = go.Scatter(x=time_series[:,0],y=time_series[:,i+3],
                                name=n,legendgroup=n,
                                line=dict(color=colorkey[n]),
-                               showlegend=i==0)
-            subfig.append_trace(trace,i+1,1)
-    return subfig
+                               showlegend=(i==0 and showleg))
+            traces.append((trace,i+1))
+    return traces
 
 
 def plotly_simulations_Tp(sims,ref):
     from equations_of_state.iapws_boundaries \
         import plot_boundaries_plotly
-    trace_bound = plot_boundaries_plotly()
+    traces_bound = plot_boundaries_plotly()
     layout=dict(yaxis=dict(title='log(p)',type='log'),
             xaxis=dict(title='T'))
     trace_ref = go.Scatter(x=ref[:,1],
@@ -157,22 +157,45 @@ def plotly_simulations_Tp(sims,ref):
                        name='ref',legendgroup='ref',
                        showlegend=True,
                        line=dict(dash='dash',color=colorkey['ref']))
-    for n,time_series in sims:
+    traces_sims = []
+    for n,time_series in sims.items():
         trace_num = go.Scatter(x=time_series[:,3],
                        y=time_series[:,4],
                        name=n,legendgroup=n,
                        showlegend=True,
                        line=dict(color=colorkey[n]))
-    fig = go.Figure(data=trace_bound+[trace_ref,trace_num],layout=layout)
+        traces_sims.append(trace_num)
+    traces = traces_bound + traces_sims + [trace_ref]
+    #fig = go.Figure(data=trace_bound+[trace_ref,trace_num],layout=layout)
+    return traces, layout
 
-def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
+
+def plotly_simulations_Tp_ts(sims,ref):
+    trace_Tp, layout_Tp = plotly_simulations_Tp(sims,ref)
+    traces_ts = plotly_simulation_t(sims,ref)
+    subfig = pytools.make_subplots(rows=4,cols=2,
+                specs=[[{'rowspan':3,'colspan':1}, {}],
+                [None, {}],
+                [None, {}],
+                [None, {}],],
+                shared_xaxes=True)
+    subfig['layout']['yaxis1']['type']='log'
+    subfig['layout']['yaxis1']['title']='log(p)'
+    for trace in trace_Tp:
+        subfig.append_trace(trace,1,1)
+    for trace,x in traces_ts:
+        subfig.append_trace(trace,x,2)
+    return subfig
+    
+    
+    
+def plot_one_simulation(sdb, eos_name, problem):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     legends = ['T','p','rho','h']
     Nfields = len(legends)
     gridx, gridy = 1,Nfields
     showleg = defaultdict(lambda : True)
-    if colorkey is None:
-        colorkey = defaultdict(lambda : next(color_ring) )
+    
     subfig = tools.make_subplots(rows=gridy,cols=gridx,
                                  shared_xaxes=True,shared_yaxes=False)
     res = sdb.Query(
@@ -188,11 +211,9 @@ def plot_one_simulation(sdb, eos_name, problem, colorkey=None):
             subfig.append_trace(trace,1+i,1)
     return subfig
 
-def plot_pT_simulation(sdb, eos_name, problem, colorkey=None):
+def plot_pT_simulation(sdb, eos_name, problem):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     showleg = defaultdict(lambda : True)
-    if colorkey is None:
-        colorkey = defaultdict(lambda : next(color_ring) )
     res = sdb.Query(
             'select network,series from {eos_name} where problem="{0}"'.
             format(problem,eos_name=eos_name))
@@ -208,11 +229,10 @@ def plot_pT_simulation(sdb, eos_name, problem, colorkey=None):
 
 
 def make_simulation_plot_list(database,eos_name):
-    colorkey = defaultdict(lambda : next(color_ring))
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
     print(problems)
-    plots = [ plot_one_simulation(sdb,eos_name, p[0], colorkey=colorkey) 
+    plots = [ plot_one_simulation(sdb,eos_name, p[0]) 
              for p in problems ]
     return plots
 
@@ -225,7 +245,6 @@ def plot_simulations(database,eos_name,prefix=''):
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     print(problems)
     showleg = defaultdict(lambda : True)
-    colorkey = defaultdict(lambda : next(color_ring))
     numproblems=len(problems)
     gridx = int(numproblems**0.5)+1
     gridy = int(numproblems / gridx)+1
