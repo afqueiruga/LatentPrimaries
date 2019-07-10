@@ -1,0 +1,17 @@
+graph {
+      QuP -- { AGH AIG AIH IGH }
+
+      Aqu -- { AqG AqI }
+      AqG -- { AGH AIG }
+      IcG -- { AIG IGH }
+
+      AqH -- { AGH AIH Aqu }
+      IcH -- { AIH IGH }
+
+      AqI -- { AIG }
+      GsH -- { AGH }
+
+      Gas -- { AqG  }
+      GsH -- { Gas }
+      AqI -- { AIH }
+}
