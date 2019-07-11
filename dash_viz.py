@@ -38,11 +38,13 @@ else:
 hubs = [
     "/Users/afq/Google Drive/networks/",
     "/Users/afq/Documents/Research/LBNL/eoshub/eoshub/networks/",
+    "/Users/afq/Research/eoshub/networks/",
+    
 ]
 
 class LazyLoad():
     "Lazily load the state of all of the eoses"
-    Entry = namedtuple('Entry', ['archs', 'table','surfs'])
+    Entry = namedtuple('Entry', ['archs', 'table','surfs','train_scores'])
     def __init__(self,hubs):
         self.eoses = []
         self.cache = {} # Cache processing results
@@ -66,13 +68,14 @@ class LazyLoad():
         surfs = ls_plot.read_networks(directory)
         surfs.pop('.DS_Store',None) # lol
         # Training and results 
-        table = ls_grade.prep_table(eos,self.hubs[eos])
+        
+        table, train_scores = ls_grade.prep_table(eos,self.hubs[eos])
         all_archs = os.listdir(directory)
         # TODO: Get the simulation results
         # TODO: Run the simulations in batch
         for row in table:
             row["id"]=row["name"]
-        return self.Entry(all_archs, table, surfs)
+        return self.Entry(all_archs, table, surfs, train_scores)
     
     def __getitem__(self, key):
         try:
@@ -84,6 +87,9 @@ class LazyLoad():
 
 loaded = LazyLoad(hubs)
 
+#
+# The components
+#
 # Prep the EOS selector table
 columns = ls_grade.table_column_names.copy()
 eos_dropdown = dcc.Dropdown(id='eos-selected',
@@ -96,7 +102,8 @@ graph_radio = dcc.RadioItems(
     options=[
         {'label': '3D rho', 'value': 'rho'},
         {'label': '3D rho_h', 'value': 'rho*h'},
-        {'label': 'simulations', 'value': 'simulations'}
+        {'label': 'Traning Loss', 'value': 'training'},
+        {'label': 'simulations', 'value': 'simulations'},
     ],
     value='rho',
     labelStyle={'display': 'inline-block'}
@@ -107,8 +114,9 @@ table = dash_table.DataTable(
     columns = [{"name":k,"id":k} for k in columns],
     #data = None, #filled by callback
     row_selectable = "multi",
-    sorting=True,
-    sorting_type="multi",
+    sort_action="native",
+    #sorting=True,
+    #sorting_type="multi",
     selected_rows=[0,1,2,3])
 
 
@@ -180,7 +188,14 @@ def update_graph(eos,selected,radio):
         selected = []
     print("this callback", eos, selected)
     ctx = dash.callback_context
-    figure = gen_graph_viewport(eos,selected,z=radio)
+    if radio in ['rho','rho*h']:
+        figure = gen_graph_viewport(eos,selected,z=radio)
+    elif radio == 'training':
+        lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
+                         if k in loaded[eos].train_scores.keys() }
+        figure = ls_plot.make_training_plot(lines_to_plot)
+    else:
+        figure = ls_plot.make_training_plot(loaded[eos].train_scores)
     return figure
     
     

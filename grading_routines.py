@@ -15,7 +15,8 @@ from batch_test_latent_sim import problems as test_problems
 def extract_scalars(directory):
     # TODO: check if its a top-directory or the tf training session
     archs = os.listdir(directory)
-    scalars = {}
+    final_scores = {}
+    train_scores = {}
     for arch in archs:
         path = os.path.join(directory,arch)
         try:
@@ -23,10 +24,12 @@ def extract_scalars(directory):
             acc.Reload()
             tags = acc.Tags()['scalars']
             w_times, step_nums, vals = zip(*acc.Scalars('goaltest'))
-            scalars[arch] = np.mean(vals[-10:])
+            train_scores[arch] = np.stack([step_nums,vals]).T
+            final_scores[arch] = np.mean(vals[-10:])
         except:
             pass
-    return scalars
+    return final_scores, train_scores
+    
     
 def grade_simulations(database,eos_name):
     """Examine and distill the results for each of the architectures"""
@@ -76,12 +79,12 @@ table_column_names = [" ","name","loss","successes","total_run_time","red_flag",
 def prep_table(eos,hub):
     test_db = hub+'test_databases/'+eos+'_testing.db'
     training_dir = hub+'training_'+eos 
-    training_scores = extract_scalars(training_dir)
+    final_scores, train_scores = extract_scalars(training_dir)
     table = []
-    for k in training_scores:
-        row = {"name":k,"loss":training_scores[k]}
+    for k in train_scores:
+        row = {"name":k,"loss":final_scores[k]}
         table.append(row)
-    return table
+    return table, train_scores
 
 if __name__=='__main__':
     hub = "/Users/afq/Google Drive/networks/"

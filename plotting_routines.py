@@ -14,7 +14,7 @@ import plotly.figure_factory as FF
 from SimDataDB import SimDataDB
 
 color_ring = itertools.cycle(['black','orange','purple','red','blue','green'])
-colorkey = defaultdict(lambda : next(pr.color_ring)) # It should be global, no?
+colorkey = defaultdict(lambda : next(color_ring)) # It should be global, no?
 d_off = 2.0
 
 def list_files(fpattern):
@@ -22,6 +22,16 @@ def list_files(fpattern):
     grab_digit = lambda f : int(re.search("([0-9]*)\.[a-zA-Z]*$",f).groups()[-1])
     files.sort(key=lambda f: grab_digit(f) )
     return files
+
+#
+# Plotting of all of the scores
+#
+def make_training_plot(train_scores):
+    layout = dict(
+        yaxis=dict(title='Test loss',type='log'),
+        xaxis=dict(title='Step number'))
+    return go.Figure(data=[ go.Scatter(x=v[:,0],y=v[:,1],name=k)
+                            for k,v in train_scores.items() ], layout=layout)
 
 #
 # 3D Plotting of the learned surfaces
@@ -131,8 +141,8 @@ def plotly_simulation_t(sims,ref, showleg = False):
     legends=['T','p','rho','rho*h']
     traces = []
     for i,name in enumerate(legends):
-        trace_ref = go.Scatter(x=ref_arr_prep[:,0],
-                              y=ref_arr_prep[:,i+1],
+        trace_ref = go.Scatter(x=ref[:,0],
+                              y=ref[:,i+1],
                               name='ref',legendgroup='ref',
                               showlegend= (i==0 and showleg),
                               line=dict(dash='dash',color=colorkey['ref']))
@@ -173,14 +183,20 @@ def plotly_simulations_Tp(sims,ref):
 def plotly_simulations_Tp_ts(sims,ref):
     trace_Tp, layout_Tp = plotly_simulations_Tp(sims,ref)
     traces_ts = plotly_simulation_t(sims,ref)
-    subfig = pytools.make_subplots(rows=4,cols=2,
+    subfig = tools.make_subplots(rows=4,cols=2,
                 specs=[[{'rowspan':3,'colspan':1}, {}],
                 [None, {}],
                 [None, {}],
                 [None, {}],],
-                shared_xaxes=True)
+                shared_xaxes=False)
     subfig['layout']['yaxis1']['type']='log'
     subfig['layout']['yaxis1']['title']='log(p)'
+    subfig['layout']['xaxis1']['title']='T (K)'
+    subfig['layout']['xaxis5']['title']='t (s)'
+    subfig['layout']['yaxis2']['title']='T'
+    subfig['layout']['yaxis3']['title']='P'
+    subfig['layout']['yaxis4']['title']='rho'
+    subfig['layout']['yaxis5']['title']='rho*h'
     for trace in trace_Tp:
         subfig.append_trace(trace,1,1)
     for trace,x in traces_ts:
