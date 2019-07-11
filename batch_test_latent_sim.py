@@ -120,10 +120,7 @@ class Cycle_sgclg():
         h  =iapws97.enthalpy_region2(400.0,5.0e3) )
     
 
-problems = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))
-
-
-hub = "/Users/afq/Google Drive/networks/"
+all_test_problems = dict(inspect.getmembers(sys.modules[__name__], inspect.isclass))
 
 import numpy as np
 import os
@@ -131,19 +128,13 @@ from latent_sim import LatentSim
 
 from SimDataDB import SimDataDB
 
-eoses = {
-    'water_slgc_logp_64':dict(
+eos_test_cfg = {
+    'water_slgc_logp':dict(
         scale_file = "data_files/water_iapw_logp_ranges.csv",
         logp=True,
-        problem_list=problems.keys() # TODO watch it!
+        problem_list=all_test_problems.keys() # TODO watch it!
     ),
-    'water_lg':dict(
-        scale_file = "data_files/surf_ranges.csv",
-        logp=False,
-        problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G','Transition_L2G_Drain'
-                     'Liquid_Drain']
-    ),
-     'water_iapws_lg_logp':dict(
+    'water_iapws_lg_logp':dict(
         scale_file = "data_files/water_iapws_lg_ranges.csv",
         logp=False,
         problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',
@@ -204,6 +195,7 @@ def perform_tests_for_eos(eos, result_dir='.'):
                 solve_a_problem(p,n)
         except Exception as e:
             print("The network", n, " threw an error: ", e)
+            
 if __name__=="__main__":
     for k in eoses:
         try:
