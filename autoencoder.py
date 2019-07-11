@@ -209,10 +209,11 @@ class PolyAutoencoder(Autoencoder):
         return tf.identity(q,name=name)
     
     def decode(self, q, name=None):
+        qpoly = atu.polyexpand(q, self.Np_dec)
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         We1 = self._var("dec_W", (N_coeff, self.size_x) )
         be1 = self._var("dec_b", (self.size_x,) )
-        x = tf.matmul( atu.polyexpand(q, self.Np_dec), We1 ) + be1
+        x = tf.matmul( atu.polyexpand(qpoly, self.Np_dec), We1 ) + be1
         return tf.identity(x,name=name)
     
     

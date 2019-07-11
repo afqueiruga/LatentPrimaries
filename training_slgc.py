@@ -1,11 +1,13 @@
 if __name__=="__main__":
-    training_dir = "/Users/afq/Google Drive/networks/"
+    # training_dir = "/Users/afq/Google Drive/networks/"
+    training_dir = "/Users/afq/Research/eoshub/networks/"
+
     if True: #imac
         data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
     else:
         data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
-    dataset = "water_iapws_slgc_logp_scaled"
-    eosname = "water_iapws_rh_slgc_logp"
+    dataset = "water_iapws_logp_scaled"
+    eosname = "water_iapws_slgc_logp"
 #     caes = [ 0.0, 1.0 ]
     inis = [ 'rand','pT', 'rhoh' ]
     caes = [ 0.0, ]
@@ -25,7 +27,7 @@ if __name__=="__main__":
         [2,6, 18,36,'sigmoid'],
         [2,6, 24,48,'sigmoid'],
     ]
-    beta_incs = [0.0,]
+    beta_incs = [0.0,0.05]
     archs_to_try = []
     for arch in class_archs:
         for beta_inc in beta_incs:
@@ -37,7 +39,7 @@ if __name__=="__main__":
     for arch in archs_to_try:
         sets_to_try.extend(extend_train_params(arch))
 
-    n_epoch = 5000
+    n_epoch = 10000
 
     import multiprocessing as multi
     import itertools

@@ -29,7 +29,7 @@ def AutoencoderFactory(hyper, outerdim, innerdim, stream_mini, stream_all):
                      *hyper['args'],
                      data_all=stream_all,
                      encoder_init=hyper['ini'],
-                     cae_lambda=hyper['cae'],)
+                     cae_lambda=hyper['cae'])
 
 
 class SaveAtEndHook(tf.train.SessionRunHook):
