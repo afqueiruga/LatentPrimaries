@@ -59,6 +59,7 @@ table = dash_table.DataTable(
     #data = None, #filled by callback
     row_selectable = "multi",
     sort_action="native",
+    filter_action="native",
     #sorting=True,
     #sorting_type="multi",
     selected_rows=[0,1,2,3])

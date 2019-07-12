@@ -8,7 +8,7 @@ import numpy as np
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from SimDataDB import SimDataDB
 
-from batch_test_latent_sim import problems as test_problems
+from batch_test_latent_sim import all_test_problems as test_problems
 
 
 
