@@ -513,26 +513,28 @@ but requires a separate curve fit in practice due to numerical challenges.}
   There is a fourth dimension to the surface of enthalpy $h$ that exhibits
   similar discontinuities; the $\log{p}$, $T$, $h$ surface is plotted
   in the Appendix. (Every point on this plot is a point in the
-  generated dataset used for the optimization)}
+  generated dataset used for the optimization.) An interactive version
+of this figure is included online.}
 \end{figure}
 
 
 {\bf Remark:} There are even more known phases of crystal ice which for water
-For water, the supercritical phase and exotic ices only occur in
-laboratory conditions or naturally near the
-crust \cite{}. For our case, we only handle the Ice I and cutoff the
+For water, the supercritical phase only occurs at extreme conditions
+near the mantel or near magma chambers, which could be potential sites
+for geothermal plants\cite{elders_science_2010}. The exotic ices only occur in
+laboratory conditions\cite{water_revised_2009}. For our case, we only handle the Ice I and cutoff the
 regime at \si{10^8}{Pa}. For other materials these exotic phases can be
 applicable. Methane $CH_4$ is actually well beyond its supercritical
 point at T=\si{-82.59}{C}\cite{the_engineering_toolbox_methane_2008}, so only an appropriate gas law can do the trick, until
-the bi-species hydrate phase comes into play.
-The liquid-gas-equilibrium-supercritical state transition comes into
-play in, for example, in geoengineered systems using $CO_2$
-such as geothermal plants are carbon sequestration facilities, the
+the bi-species hydrate phase comes into play. Handling the
+liquid-gas-equilibrium-supercritical state transition also comes into
+play with other fluids; for example, in geoengineered systems using
+$CO_2$ such as geothermal plants and carbon sequestration facilities, the
 working fluid is often in the supercritical regime at depth, and the
-phase boundary. cite
-curt. cite hydrates.
+phase boundary \cite{pruess_feasibility_2006,oldenburg_migration_2006}. 
 When binary mixtures are involved, the number of possible phases and
-equilibria increases again.
+equilibria increases again; methane hydrate simulators have 15
+states \cite{moridis_simulation_2019}.
 
 
 {\bf Remark:} Many popular forms of EOS do not even have closed form
