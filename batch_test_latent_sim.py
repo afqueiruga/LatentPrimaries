@@ -129,24 +129,28 @@ from latent_sim import LatentSim
 from SimDataDB import SimDataDB
 
 eos_test_cfg = {
-    'water_slgc_logp':dict(
+    '_slgc':dict(
         scale_file = "data_files/water_iapw_logp_ranges.csv",
         logp=True,
         problem_list=all_test_problems.keys() # TODO watch it!
     ),
-    'water_iapws_lg_logp':dict(
+    '_lg':dict(
         scale_file = "data_files/water_iapws_lg_ranges.csv",
         logp=False,
         problem_list=['Small_Liquid','Small_Gas','Hot_Gas','Transition_L2G',
                       'Transition_L2G_Drain'
                      'Liquid_Drain','Hot_Gas_Fill']
     ),
-    'water_linear':dict(
+    '_linear':dict(
         scale_file = "data_files/water_linear_ranges.csv",
         logp=False,
         problem_list=['Linear_Liquid',]
     ),
 }
+def find_eos_test_cfg(key):
+    for dataset_match in eos_test_cfg:
+        if dataset_match in key:
+            return eos_test_cfg[key]
 
 def curried_latentssim(eos,network):
     """Curried constructor for LatentSim with the hub and 
@@ -169,7 +173,9 @@ def run_one_simulation(eos,network,problem_name,verbose=True):
                                verbose=verbose)
     return time_series, ls
     
-def perform_tests_for_eos(eos, result_dir='.'):
+
+    
+def perform_tests_for_eos(eos, result_dir='.'): # dep
     """Perform all of the tests and generate a report."""
     networks = os.listdir(hub+'/training_'+eos)
     problem_list = eoses[eos]['problem_list']

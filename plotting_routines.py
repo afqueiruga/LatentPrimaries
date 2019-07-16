@@ -137,16 +137,17 @@ def plot_networks(surfaces,aspectratio=1, z='rho'):
 #
 # Simulations
 #
-def plotly_simulation_t(sims,ref, showleg = False):
+def plotly_simulation_t(sims,ref=None, showleg = False):
     legends=['T','p','rho','rho*h']
     traces = []
     for i,name in enumerate(legends):
-        trace_ref = go.Scatter(x=ref[:,0],
-                              y=ref[:,i+1],
-                              name='ref',legendgroup='ref',
-                              showlegend= (i==0 and showleg),
-                              line=dict(dash='dash',color=colorkey['ref']))
-        traces.append((trace_ref,i+1))
+        if not ref is None:
+            trace_ref = go.Scatter(x=ref[:,0],
+                                  y=ref[:,i+1],
+                                  name='ref',legendgroup='ref',
+                                  showlegend= (i==0 and showleg),
+                                  line=dict(dash='dash', color=colorkey['ref']))
+            traces.append((trace_ref,i+1))
         for n,time_series in sims.items():
             trace = go.Scatter(x=time_series[:,0],y=time_series[:,i+3],
                                name=n,legendgroup=n,
@@ -156,13 +157,14 @@ def plotly_simulation_t(sims,ref, showleg = False):
     return traces
 
 
-def plotly_simulations_Tp(sims,ref):
+def plotly_simulations_Tp(sims,ref=None):
     from equations_of_state.iapws_boundaries \
         import plot_boundaries_plotly
     traces_bound = plot_boundaries_plotly()
     layout=dict(yaxis=dict(title='log(p)',type='log'),
             xaxis=dict(title='T'))
-    trace_ref = go.Scatter(x=ref[:,1],
+    if not ref is None:
+        trace_ref = go.Scatter(x=ref[:,1],
                        y=ref[:,2],
                        name='ref',legendgroup='ref',
                        showlegend=True,
@@ -175,7 +177,7 @@ def plotly_simulations_Tp(sims,ref):
                        showlegend=True,
                        line=dict(color=colorkey[n]))
         traces_sims.append(trace_num)
-    traces = traces_bound + traces_sims + [trace_ref]
+    traces = traces_bound + traces_sims + ([trace_ref] if not ref is None else [])
     #fig = go.Figure(data=trace_bound+[trace_ref,trace_num],layout=layout)
     return traces, layout
 
