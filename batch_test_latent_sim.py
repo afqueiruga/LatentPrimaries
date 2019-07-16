@@ -130,7 +130,7 @@ from SimDataDB import SimDataDB
 
 eos_test_cfg = {
     '_slgc':dict(
-        scale_file = "data_files/water_iapw_logp_ranges.csv",
+        scale_file = "data_files/water_iapws_logp_ranges.csv",
         logp=True,
         problem_list=all_test_problems.keys() # TODO watch it!
     ),
