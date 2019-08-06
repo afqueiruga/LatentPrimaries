@@ -12,6 +12,5 @@ graph {
       GsH -- { AGH }
 
       Gas -- { AqG  }
-      GsH -- { Gas }
       AqI -- { AIH }
 }
