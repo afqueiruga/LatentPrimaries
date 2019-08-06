@@ -17,11 +17,7 @@ color_ring = itertools.cycle(['black','orange','purple','red','blue','green'])
 colorkey = defaultdict(lambda : next(color_ring)) # It should be global, no?
 d_off = 2.0
 
-def list_files(fpattern):
-    files = glob.glob(fpattern)
-    grab_digit = lambda f : int(re.search("([0-9]*)\.[a-zA-Z]*$",f).groups()[-1])
-    files.sort(key=lambda f: grab_digit(f) )
-    return files
+from directory_parsing import list_files
 
 #
 # Plotting of all of the scores
@@ -137,7 +133,7 @@ def plot_networks(surfaces,aspectratio=1, z='rho'):
 #
 # Simulations
 #
-def plotly_simulation_t(sims,ref=None, showleg = False):
+def plotly_simulation_t(sims,ref=None, showlegend=False):
     legends=['T','p','rho','rho*h']
     traces = []
     for i,name in enumerate(legends):
@@ -145,19 +141,19 @@ def plotly_simulation_t(sims,ref=None, showleg = False):
             trace_ref = go.Scatter(x=ref[:,0],
                                   y=ref[:,i+1],
                                   name='ref',legendgroup='ref',
-                                  showlegend= (i==0 and showleg),
+                                  showlegend= (i==0 and showlegend),
                                   line=dict(dash='dash', color=colorkey['ref']))
             traces.append((trace_ref,i+1))
         for n,time_series in sims.items():
             trace = go.Scatter(x=time_series[:,0],y=time_series[:,i+3],
                                name=n,legendgroup=n,
                                line=dict(color=colorkey[n]),
-                               showlegend=(i==0 and showleg))
+                               showlegend=(i==0 and showlegend))
             traces.append((trace,i+1))
     return traces
 
 
-def plotly_simulations_Tp(sims,ref=None):
+def plotly_simulations_Tp(sims,ref=None,showlegend=True):
     from equations_of_state.iapws_boundaries \
         import plot_boundaries_plotly
     traces_bound = plot_boundaries_plotly()
@@ -167,14 +163,14 @@ def plotly_simulations_Tp(sims,ref=None):
         trace_ref = go.Scatter(x=ref[:,1],
                        y=ref[:,2],
                        name='ref',legendgroup='ref',
-                       showlegend=True,
+                       showlegend=showlegend,
                        line=dict(dash='dash',color=colorkey['ref']))
     traces_sims = []
     for n,time_series in sims.items():
         trace_num = go.Scatter(x=time_series[:,3],
                        y=time_series[:,4],
                        name=n,legendgroup=n,
-                       showlegend=True,
+                       showlegend=showlegend,
                        line=dict(color=colorkey[n]))
         traces_sims.append(trace_num)
     traces = traces_bound + traces_sims + ([trace_ref] if not ref is None else [])
@@ -182,11 +178,11 @@ def plotly_simulations_Tp(sims,ref=None):
     return traces, layout
 
 
-def plotly_simulations_Tp_ts(sims,ref):
-    trace_Tp, layout_Tp = plotly_simulations_Tp(sims,ref)
-    traces_ts = plotly_simulation_t(sims,ref)
+def plotly_simulations_Tp_ts(sims,ref,showlegend=True):
+    trace_Tp, layout_Tp = plotly_simulations_Tp(sims,ref,showlegend=False)
+    traces_ts = plotly_simulation_t(sims,ref,showlegend=showlegend)
     subfig = tools.make_subplots(rows=4,cols=2,
-                specs=[[{'rowspan':3,'colspan':1}, {}],
+                specs=[[{'rowspan':4,'colspan':1}, {}],
                 [None, {}],
                 [None, {}],
                 [None, {}],],
@@ -206,8 +202,15 @@ def plotly_simulations_Tp_ts(sims,ref):
     return subfig
     
     
+
+def plotyly_query_simulations(problem_name,eos,reference=None,result_dir='./'):
+    sdb = SimDataDB(result_dir+f'/{eos}_testing.db')
+    q = sdb.Query(f'select network,series from {eos} where problem=="{problem_name}"')
+    fig = plotly_simulations_Tp_ts({k:v for k,v in q},
+                                  ref_arr_prep)
+    return fig
     
-def plot_one_simulation(sdb, eos_name, problem):
+def plot_one_simulation(sdb, eos_name, problem): # DEP
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     legends = ['T','p','rho','h']
     Nfields = len(legends)
@@ -229,7 +232,7 @@ def plot_one_simulation(sdb, eos_name, problem):
             subfig.append_trace(trace,1+i,1)
     return subfig
 
-def plot_pT_simulation(sdb, eos_name, problem):
+def plot_pT_simulation(sdb, eos_name, problem): # DEP
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     showleg = defaultdict(lambda : True)
     res = sdb.Query(
@@ -246,7 +249,7 @@ def plot_pT_simulation(sdb, eos_name, problem):
 
 
 
-def make_simulation_plot_list(database,eos_name):
+def make_simulation_plot_list(database,eos_name): # DEP
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
     print(problems)
@@ -256,7 +259,7 @@ def make_simulation_plot_list(database,eos_name):
 
 
         
-def plot_simulations(database,eos_name,prefix=''):
+def plot_simulations(database,eos_name,prefix=''): # DEP
     """Plot all of the test simulations in a grid"""
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))

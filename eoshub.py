@@ -1,19 +1,12 @@
 from collections import namedtuple
 import os, glob
 
+from directory_parsing import hubs
+
 import grading_routines as ls_grade
 import plotting_routines as ls_plot
-import batch_test_latent_sim as ls_test
+import test_cfg
 from latent_sim import LatentSim
-
-# Configure the eos hub
-hubs = [
-    "/Users/afq/Google Drive/networks/",
-    "/Users/afq/Documents/Research/LBNL/eoshub/eoshub/networks/",
-    "/Users/afq/Research/eoshub/networks/",   
-]
-
-
 
 class LazyLoad():
     "Lazily load the state of all of the eoses"
@@ -69,10 +62,10 @@ class LazyLoad():
         try:
             ls = self.sims[(eos,network)]
         except KeyError:
-            for dataset_match in ls_test.eos_test_cfg:
+            for dataset_match in test_cfg.eos_test_cfg:
                 if dataset_match in eos:
-                    scale_file = ls_test.eos_test_cfg[dataset_match]['scale_file']
-                    logp = ls_test.eos_test_cfg[dataset_match]['logp']
+                    scale_file = test_cfg.eos_test_cfg[dataset_match]['scale_file']
+                    logp = test_cfg.eos_test_cfg[dataset_match]['logp']
                     break
             ls = LatentSim(self._eos_dir(eos)+'/'+network,scale_file,logp)
             self.sims[(eos,network)] = ls
