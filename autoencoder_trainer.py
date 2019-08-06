@@ -33,12 +33,18 @@ def AutoencoderFactory(hyper, outerdim, innerdim, stream_mini, stream_all):
 
 
 class SaveAtEndHook(tf.train.SessionRunHook):
-    def __init__(self,fname):
+    def __init__(self,fname, graph):
         self.fname = fname
+        self.graph = graph
     def begin(self):
         self._saver = tf.train.Saver()
     def end(self, session):
-        # TODO freeze it
+        atu.write_trimmed_pb_graph(self.graph,session,
+                              ["decode","encode"],
+                              self.fname+"_frz")
+        atu.write_trimmed_meta_graph(self.graph,session,
+                              ["decode","encode"],
+                              self.fname+"_frz_meta")
         self._saver.save(session, self.fname)
         
 class DoStuffHook(tf.train.SessionRunHook):
@@ -93,7 +99,7 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         def printgoalhook(ctx,run_values):
             print(ctx.sessiormn.run(ae.goal_all))
         stophook = tf.train.StopAtStepHook(last_step=n_epoch)
-        saverhook = SaveAtEndHook(training_dir+"/final_variables")
+        saverhook = SaveAtEndHook(training_dir+"/final_variables",graph)
         # Make a closure into a hook
         @DoStuffHook(freq=image_freq)
         def extrahook(ctx,run_values):

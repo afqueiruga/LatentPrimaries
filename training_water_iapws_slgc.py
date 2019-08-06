@@ -39,7 +39,7 @@ if __name__=="__main__":
     for arch in archs_to_try:
         sets_to_try.extend(extend_train_params(arch))
 
-    n_epoch = 10000
+    n_epoch = 16001
 
     import multiprocessing as multi
     import itertools
