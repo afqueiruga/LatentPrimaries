@@ -139,6 +139,11 @@ def update_graph(eos,selected,radio):
         lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
                          if k in loaded[eos].train_scores.keys() }
         figure = ls_plot.make_training_plot(lines_to_plot)
+    elif radio == 'simulation':
+        lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
+                         if k in loaded[eos].train_scores.keys() }
+        figure = ls_plot.make_training_plot(lines_to_plot)
+        
     else:
         figure = ls_plot.make_training_plot(loaded[eos].train_scores)
     return figure
