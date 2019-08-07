@@ -41,10 +41,10 @@ class SaveAtEndHook(tf.train.SessionRunHook):
     def end(self, session):
         atu.write_trimmed_pb_graph(self.graph,session,
                               ["decode","encode"],
-                              self.fname+"_frz")
+                              self.fname+"_frz.pb")
         atu.write_trimmed_meta_graph(self.graph,session,
                               ["decode","encode"],
-                              self.fname+"_frz_meta")
+                              self.fname+"_frz.meta")
         self._saver.save(session, self.fname)
         
 class DoStuffHook(tf.train.SessionRunHook):

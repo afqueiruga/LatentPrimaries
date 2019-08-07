@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 import afqstensorutils as atu
 
+LOAD_PROTOBUF = True
+
 def unshift(x, scale):
     return (scale[2,:]-scale[1,:])*x + scale[0,:]
 def shift(x,scale):
@@ -23,16 +25,24 @@ class LatentSim():
         """Read the autoencoder from a tensorflow file"""
         self._graph = tf.Graph()
         self._sess = tf.Session(graph=self._graph)
-#         with self._sess as sess:
-        with self._graph.as_default():
-            saver = tf.train.import_meta_graph(location+'/final_graph.meta')
-        saver.restore(self._sess,location+'/final_variables')
+        if LOAD_PROTOBUF:
+            with tf.gfile.GFile(location+'/final_variables_frz','rb') as f:
+                gdef = tf.GraphDef()
+                gdef.ParseFromString(f.read())
+            with self._graph.as_default():
+                tf.import_graph_def(gdef)
+            pfx='import/'
+        else:
+            with self._graph.as_default():
+                saver = tf.train.import_meta_graph(location+'/final_variables.meta')
+            saver.restore(self._sess,location+'/final_variables')
+            pfx=''
         # hooks to the decoder
-        self.i_q = self._graph.get_tensor_by_name('i_q:0') 
-        self.o_x = self._graph.get_tensor_by_name('decode:0')
+        self.i_q = self._graph.get_tensor_by_name(pfx+'i_q:0') 
+        self.o_x = self._graph.get_tensor_by_name(pfx+'decode:0')
         # hooks to the encoder
-        self.i_x = self._graph.get_tensor_by_name('i_x:0')
-        self.o_q = self._graph.get_tensor_by_name('encode:0')
+        self.i_x = self._graph.get_tensor_by_name(pfx+'i_x:0')
+        self.o_q = self._graph.get_tensor_by_name(pfx+'encode:0')
         # The simulation inputs and outputs in the unscaled space
         # (the prior conditioning of the data put it on [-1,1])
         if scale_file:
