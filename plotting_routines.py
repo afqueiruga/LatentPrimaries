@@ -178,7 +178,7 @@ def plotly_simulations_Tp(sims,ref=None,showlegend=True):
     return traces, layout
 
 
-def plotly_simulations_Tp_ts(sims,ref,showlegend=True):
+def plotly_simulations_Tp_ts(sims,ref=None,showlegend=True):
     trace_Tp, layout_Tp = plotly_simulations_Tp(sims,ref,showlegend=False)
     traces_ts = plotly_simulation_t(sims,ref,showlegend=showlegend)
     subfig = tools.make_subplots(rows=4,cols=2,
