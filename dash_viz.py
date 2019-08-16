@@ -49,7 +49,7 @@ graph_radio = dcc.RadioItems(
         {'label': '3D rho', 'value': 'rho'},
         {'label': '3D rho_h', 'value': 'rho*h'},
         {'label': 'Traning Loss', 'value': 'training'},
-        {'label': 'simulations', 'value': 'simulations'},
+        {'label': 'Simulations', 'value': 'simulations'},
     ],
     value='rho',
     labelStyle={'display': 'inline-block'}
@@ -132,8 +132,9 @@ def select_all(n_clicks, all_rows, selected_rows):
     [Input("eos-selected",'value'),
      Input("select-table", "selected_row_ids"),
      Input("graph-radio","value"),
+     Input("problem-selected","value"),
      ])
-def update_graph(eos,selected,radio):
+def update_graph(eos,selected,radio,problem_selected):
     if selected is None: 
         selected = []
     print("this callback", eos, selected)
@@ -144,21 +145,22 @@ def update_graph(eos,selected,radio):
         lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
                          if k in loaded[eos].train_scores.keys() }
         figure = ls_plot.make_training_plot(lines_to_plot)
-    elif radio == 'simulation':
-        sdb = SimDataDB()
-        
+    elif radio == 'simulations':
         arch_filter = [ k for k in selected if k in loaded[eos].train_scores.keys() ]
-        figure = ls_plot.make_training_plot(lines_to_plot)
-        
-    else:
-        problem = "Liquid_Drain"
         print(selected)
         try:
-            figure = ls_plot.plotyly_query_simulations("Liquid_Drain",eos, 
-                                                   arch_filter=selected)
+            figure = ls_plot.plotyly_query_simulations(problem_selected,eos,
+                                                   arch_filter=arch_filter)
+            print(figure)
         except:
-            print(f"No entry found for {eos} solving {problem}")
+            print(f"No entry found for {eos} solving {problem_selected}")
             figure = None
+    else:
+        print("No radio button defined as ",radio)
+        lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
+                         if k in loaded[eos].train_scores.keys() }
+        figure = ls_plot.make_training_plot(lines_to_plot)
+
     return figure
     
     
