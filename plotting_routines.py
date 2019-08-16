@@ -17,6 +17,7 @@ color_ring = itertools.cycle(['black','orange','purple','red','blue','green'])
 colorkey = defaultdict(lambda : next(color_ring)) # It should be global, no?
 d_off = 2.0
 
+import directory_parsing
 from directory_parsing import list_files
 
 #
@@ -201,15 +202,24 @@ def plotly_simulations_Tp_ts(sims,ref=None,showlegend=True):
         subfig.append_trace(trace,x,2)
     return subfig
     
-    
 
-def plotyly_query_simulations(problem_name,eos,reference=None,result_dir='./'):
+def plotyly_query_simulations(problem_name,eos,reference=None,result_dir=None, arch_filter=None):
+    if result_dir is None:
+        result_dir = directory_parsing.test_dir
     sdb = SimDataDB(result_dir+f'/{eos}_testing.db')
+    
     q = sdb.Query(f'select network,series from {eos} where problem=="{problem_name}"')
-    fig = plotly_simulations_Tp_ts({k:v for k,v in q},
-                                  ref_arr_prep)
+    if not arch_filter is None:
+        sims = {k:v for k,v in q if k in arch_filter}
+    else:
+        sims = {k:v for k,v in q }
+    fig = plotly_simulations_Tp_ts(sims,
+                                   ref=None, showlegend=False)
     return fig
     
+
+## DEP
+#
 def plot_one_simulation(sdb, eos_name, problem): # DEP
     networks = sdb.Query('select distinct network from {0}'.format(eos_name))
     legends = ['T','p','rho','h']
@@ -247,8 +257,6 @@ def plot_pT_simulation(sdb, eos_name, problem): # DEP
             showlegend=False) )
     return traces
 
-
-
 def make_simulation_plot_list(database,eos_name): # DEP
     sdb = SimDataDB(database)
     problems = sdb.Query('select distinct problem from {0}'.format(eos_name))
@@ -256,9 +264,7 @@ def make_simulation_plot_list(database,eos_name): # DEP
     plots = [ plot_one_simulation(sdb,eos_name, p[0]) 
              for p in problems ]
     return plots
-
-
-        
+     
 def plot_simulations(database,eos_name,prefix=''): # DEP
     """Plot all of the test simulations in a grid"""
     sdb = SimDataDB(database)
@@ -300,7 +306,8 @@ def plot_simulations(database,eos_name,prefix=''): # DEP
                 subfig.append_trace(trace,4*(pos[0]-1)+i+1,pos[1])
     # from IPython import embed ; embed()
     return subfig
-
+#
+##
 
 
 #

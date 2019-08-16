@@ -28,6 +28,7 @@ from dash.dependencies import Input, Output, State
 from eoshub import EOSHub
 import plotting_routines as ls_plot
 import grading_routines as ls_grade
+import test_cfg
 
 loaded = EOSHub
 
@@ -40,6 +41,7 @@ eos_dropdown = dcc.Dropdown(id='eos-selected',
                        options=[{'label':k,'value':k} for k in loaded.eoses],
                        value=loaded.eoses[1])
 
+# Select graph type
 select_button = html.Button('Select All', id='my-button')
 graph_radio = dcc.RadioItems(
     id='graph-radio',
@@ -52,6 +54,9 @@ graph_radio = dcc.RadioItems(
     value='rho',
     labelStyle={'display': 'inline-block'}
 )
+# Select eos problem
+problem_dropdown = dcc.Dropdown(id='problem-selected',
+                                options=[{'label':k,'value':k} for k in test_cfg.all_test_problems])
 
 table = dash_table.DataTable(
     id = "select-table",
@@ -79,7 +84,7 @@ layout = ROW([
         COL([eos_dropdown],"ten"),
     ]),
     dcc.Graph(id="3d-graph"),
-    ROW([COL(select_button,"two"),COL([graph_radio],"ten")]),
+    ROW([COL(select_button,"two"),COL([graph_radio],"two"), COL([problem_dropdown],"eight") ]),
     table,
 ])
 
@@ -140,12 +145,20 @@ def update_graph(eos,selected,radio):
                          if k in loaded[eos].train_scores.keys() }
         figure = ls_plot.make_training_plot(lines_to_plot)
     elif radio == 'simulation':
-        lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
-                         if k in loaded[eos].train_scores.keys() }
+        sdb = SimDataDB()
+        
+        arch_filter = [ k for k in selected if k in loaded[eos].train_scores.keys() ]
         figure = ls_plot.make_training_plot(lines_to_plot)
         
     else:
-        figure = ls_plot.make_training_plot(loaded[eos].train_scores)
+        problem = "Liquid_Drain"
+        print(selected)
+        try:
+            figure = ls_plot.plotyly_query_simulations("Liquid_Drain",eos, 
+                                                   arch_filter=selected)
+        except:
+            print(f"No entry found for {eos} solving {problem}")
+            figure = None
     return figure
     
     
