@@ -39,7 +39,7 @@ loaded = EOSHub
 columns = ls_grade.table_column_names.copy()
 eos_dropdown = dcc.Dropdown(id='eos-selected',
                        options=[{'label':k,'value':k} for k in loaded.eoses],
-                       value=loaded.eoses[1])
+                       value="water_iapws_slgc_logp")
 
 # Select graph type
 select_button = html.Button('Select All', id='my-button')
@@ -56,7 +56,8 @@ graph_radio = dcc.RadioItems(
 )
 # Select eos problem
 problem_dropdown = dcc.Dropdown(id='problem-selected',
-                                options=[{'label':k,'value':k} for k in test_cfg.all_test_problems])
+                                options=[{'label':k,'value':k} for k in test_cfg.all_test_problems],
+                               value='Transition_L2G_Drain')
 
 table = dash_table.DataTable(
     id = "select-table",
@@ -147,11 +148,11 @@ def update_graph(eos,selected,radio,problem_selected):
         figure = ls_plot.make_training_plot(lines_to_plot)
     elif radio == 'simulations':
         arch_filter = [ k for k in selected if k in loaded[eos].train_scores.keys() ]
-        print(selected)
+        print(arch_filter)
         try:
-            figure = ls_plot.plotyly_query_simulations(problem_selected,eos,
+            figure = ls_plot.plotly_query_simulations(problem_selected,eos,
                                                    arch_filter=arch_filter)
-            print(figure)
+#             print(figure)
         except:
             print(f"No entry found for {eos} solving {problem_selected}")
             figure = None

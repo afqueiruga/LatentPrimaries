@@ -203,15 +203,17 @@ def plotly_simulations_Tp_ts(sims,ref=None,showlegend=True):
     return subfig
     
 
-def plotyly_query_simulations(problem_name,eos,reference=None,result_dir=None, arch_filter=None):
+def plotly_query_simulations(problem_name,eos,reference=None,result_dir=None, arch_filter=None):
     if result_dir is None:
         result_dir = directory_parsing.test_dir
     sdb = SimDataDB(result_dir+f'/{eos}_testing.db')
     
     q = sdb.Query(f'select network,series from {eos} where problem=="{problem_name}"')
+    print(q)
     if not arch_filter is None:
         sims = {k:v for k,v in q if k in arch_filter}
     else:
+        print("This code")
         sims = {k:v for k,v in q }
     fig = plotly_simulations_Tp_ts(sims,
                                    ref=None, showlegend=False)
