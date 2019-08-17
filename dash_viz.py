@@ -8,12 +8,12 @@ import dash_html_components as html
 import plotly.graph_objs as go
 import dash_table
 
-external_stylesheets = ['https://codepen.io/anon/pen/mardKv.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css'] #'https://codepen.io/anon/pen/mardKv.css']
 
-app = dash.Dash(__name__)#, external_stylesheets=external_stylesheets)
-app.css.append_css({
-    "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
-})
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+# app.css.append_css({
+#     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
+# })
 # theme =  {
 #     'dark': True,
 #     'detail': '#007439',
@@ -85,7 +85,7 @@ layout = ROW([
         COL([eos_dropdown],"ten"),
     ]),
     dcc.Graph(id="3d-graph"),
-    ROW([COL(select_button,"two"),COL([graph_radio],"two"), COL([problem_dropdown],"eight") ]),
+    ROW([COL(select_button,"two"),COL([graph_radio],"six"), COL([problem_dropdown],"four") ]),
     table,
 ])
 
