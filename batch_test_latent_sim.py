@@ -24,7 +24,7 @@ def solve_a_problem_arch(problem_name, eos, network=None):
     q0 = ls.find_point(**problem.initial)
     ls.set_params(**problem.params)
     time_series = ls.integrate(problem.t_max, q0, 
-                               schedule=problem.schedule,verbose=True)
+                               schedule=problem.schedule,verbose=False)
     return time_series    
 
 def solve_a_problem(problem_name,eos, result_dir='.'):

@@ -232,7 +232,7 @@ class LatentSim():
         for k,v in kwargs.items():
             self._vars[k].load(v,self._sess)
     
-    def solve_a_time_step(self, q0, under_relax=0.1):
+    def solve_a_time_step(self, q0, under_relax=0.1, verbose=False):
         """Solve one timestep. Note that LatentSim is stateless in this 
         regard."""
         qi = q0.copy()
@@ -242,11 +242,15 @@ class LatentSim():
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
             nDq = np.linalg.norm(Dq)
+
             if nDq<1.0e-14: 
                 break # It might be 0, we're done
             # step = min(0.001/nDq,1.0)*Dq
             step = under_relax*Dq
             # TODO line search
+            if verbose:
+                s = self.decode(qi)
+                print(k, qi, s, nDq)
             qi[:] += step
             if nDq<2.0e-7: break
         return qi,k,nDq
@@ -254,7 +258,7 @@ class LatentSim():
     
     def integrate(self, t_max, q0,
                   schedule=lambda s,t :None,
-                  verbose=False):
+                  verbose=False, under_relax=0.1):
         """Integrate from t=0 to t_max."""
         t = 0
         q = q0.copy()
@@ -263,7 +267,7 @@ class LatentSim():
         while t<t_max:
             t+=Dt
             schedule(self, t)
-            q,k,nDq = self.solve_a_time_step(q)
+            q,k,nDq = self.solve_a_time_step(q,under_relax = under_relax)
             if np.isnan(q).any() or np.isinf(q).any():
                 print("NaN encountered at t=",t)
                 break
