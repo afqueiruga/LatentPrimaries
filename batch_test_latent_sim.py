@@ -17,20 +17,24 @@ def curried_latentssim(eos,network):
     ls = LatentSim(hub+'training_'+eos+'/'+network,scale_file,logp)
     return ls
 
+
+def solve_a_problem_arch(problem_name, eos, network=None):
+    problem = all_test_problems[problem_name]
+    ls = EOSHub.LatentSim(eos,network)
+    q0 = ls.find_point(**problem.initial)
+    ls.set_params(**problem.params)
+    time_series = ls.integrate(problem.t_max, q0, 
+                               schedule=problem.schedule,verbose=True)
+    return time_series    
+
 def solve_a_problem(problem_name,eos, result_dir='.'):
     sdb = SimDataDB(result_dir+'/{0}_testing.db'.format(eos))
     @sdb.Decorate(eos,[('problem','string'),('network','string')],
                       [('series','array')],memoize=False)
     def _solve(problem_name,network):
         print("Testing {0}:{1} on {2}".format(eos,network,problem_name))
-        problem = all_test_problems[problem_name]
-        ls = EOSHub.LatentSim(eos,network)
-        q0 = ls.find_point(**problem.initial)
-        ls.set_params(**problem.params)
-        time_series = ls.integrate(problem.t_max, q0, 
-                                   schedule=problem.schedule,verbose=True)
+        time_series = solve_a_problem_arch(problem_name,eos,network)
         return {'series':time_series}
-
     def _job(arch):
         try:
             _solve(problem_name,arch)
@@ -39,8 +43,6 @@ def solve_a_problem(problem_name,eos, result_dir='.'):
     for arch in EOSHub[eos].archs:
         #_solve(problem_name,arch)
         _job(arch)
-
-        
 
 #
 # Deprecated scripting before EOSHub

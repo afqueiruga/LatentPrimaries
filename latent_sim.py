@@ -83,7 +83,7 @@ class LatentSim():
         return self._sess.run(self.o_q, feed_dict={self.i_x:x})
     
     def find_point(self, T=None, p=None, rho=None, rho_h=None, 
-                   phase=None, under_relax=1.0,verbose=True):
+                   phase=None, under_relax=0.1,verbose=True):
         """Specify only two coordinates and find q!
         
         The phase tag only helps with the initial conditions.
@@ -152,13 +152,17 @@ class LatentSim():
             # print(Rt,Kt)
             R = Rt[0,idcs]-s0[0,idcs]
             K = Kt[0,idcs,:]
-            Dq = np.linalg.solve(K,-R)
+            try:
+                Dq = np.linalg.solve(K,-R)
+            except Exception as e:
+                print("Singular Matrix Error during initialization")
+                raise RuntimeError("Initialization Failed")
             # print(R,K,Dq)
             nDq = np.linalg.norm(Dq)
 #             print nDq, q0
             if np.isnan(Dq).any(): 
                 print("Iteration failed with a nan.")
-                raise RuntimeError('Got a nan')
+                raise RuntimeError("Initialization Failed")
             if np.linalg.norm(Dq)<1.0e-14:
                 break # It might be 0
 #             print  min(1.0,nDq)*Dq/nDq
