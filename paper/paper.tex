@@ -1,38 +1,40 @@
 \PassOptionsToPackage{unicode=true}{hyperref} % options for packages loaded elsewhere
 \PassOptionsToPackage{hyphens}{url}
 %
-\documentclass[]{article}
-\usepackage[margin=1in]{geometry}
-\usepackage{amssymb,amsmath}
+\documentclass[AMA,STIX1COL]{WileyNJD-v2}
+% \usepackage[margin=1in]{geometry}
+%\usepackage[numbers]{natbib}
+
+\usepackage{amsmath}
+%amssymb
 \usepackage{chemmacros}
 \usepackage{siunitx}
 \usepackage{algorithm}
-\usepackage{lmodern}
-\usepackage{ifxetex,ifluatex}
-\usepackage[numbers]{natbib}
+% \usepackage{lmodern}
+% \usepackage{ifxetex,ifluatex}
 \usepackage{lineno}
-\usepackage{fixltx2e} % provides \textsubscript
-\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
-  \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
-  \usepackage{textcomp} % provides euro and other symbols
-\else % if luatex or xelatex
-  \usepackage{unicode-math}
-  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
-\fi
+% \usepackage{fixltx2e} % provides \textsubscript
+% \ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+%   \usepackage[T1]{fontenc}
+%   \usepackage[utf8]{inputenc}
+%   \usepackage{textcomp} % provides euro and other symbols
+% \else % if luatex or xelatex
+%   \usepackage{unicode-math}
+%   \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+% \fi
 % use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 % use microtype if available
-\IfFileExists{microtype.sty}{%
-\usepackage[]{microtype}
-\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-\IfFileExists{parskip.sty}{%
-\usepackage{parskip}
-}{% else
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{6pt plus 2pt minus 1pt}
-}
+% \IfFileExists{microtype.sty}{%
+% \usepackage[]{microtype}
+% \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+% }{}
+% \IfFileExists{parskip.sty}{%
+% \usepackage{parskip}
+% }{% else
+% \setlength{\parindent}{0pt}
+% \setlength{\parskip}{6pt plus 2pt minus 1pt}
+% }
 \usepackage{hyperref}
 \hypersetup{
             pdftitle={Solution of Differential Algebraic Equations with Local Constraints on the Latent Space of an Autoencoder},
@@ -41,43 +43,43 @@
             breaklinks=true}
 \urlstyle{same}  % don't use monospace font for urls
 \usepackage{color}
-\usepackage{fancyvrb}
-\newcommand{\VerbBar}{|}
-\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\newenvironment{Shaded}{}{}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+% \usepackage{fancyvrb}
+% \newcommand{\VerbBar}{|}
+% \newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+% \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% % Add ',fontsize=\small' for more characters per line
+% \newenvironment{Shaded}{}{}
+% \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+% \newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+% \newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+% \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+% \newcommand{\BuiltInTok}[1]{#1}
+% \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+% \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+% \newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+% \newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+% \newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+% \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+% \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+% \newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+% \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+% \newcommand{\ExtensionTok}[1]{#1}
+% \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+% \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+% \newcommand{\ImportTok}[1]{#1}
+% \newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+% \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+% \newcommand{\NormalTok}[1]{#1}
+% \newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+% \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+% \newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+% \newcommand{\RegionMarkerTok}[1]{#1}
+% \newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+% \newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+% \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+% \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+% \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+% \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
 \usepackage{graphicx,grffile}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
@@ -132,18 +134,24 @@
 
 \title{Solution of Differential Algebraic Equations with Local Constraints
 on the Latent Space of an Autoencoder}
-\author{Alejandro Francisco Queiruga}
-\date{\today}
+\author[1]{Alejandro Francisco Queiruga*}
+\address[1]{
+  \orgdiv{Energy Geosciences Division}, \orgname{Lawrence Berkeley
+    National Laboratory}, \orgaddress{\state{CA}}, \country{USA}}
+\corres{*\email{afqueiruga@lbl.gov}}
+
+\received{\today}
+\revised{\today}
+
+\jnlcitation{\cname{Queiruga, A.}\ctitle{Solution of DAEs on Latent Spaces},\cjournal{I. J. Num. Meth. Eng.}, \cvol{2019;00:1--2}}
 
 \begin{document}
-\maketitle
-\begin{abstract}
-  Multiphase simulation is hard.
 
+\abstract[Summary]{
+  Multiphase simulation is hard.
 Our proposed method is motivated by the problems of multiphase reaction and
 transport, where the underlying constraints are the ill-behaved material
 properties which are difficult to describe.
-  
 Our proposed approach is to build upon modern machine learning
 techniques to aid in equation discovery. An autoencoder is trained on
 the original material dataset to learn a lower-dimensional
@@ -169,9 +177,9 @@ balance laws. Through deep learning approaches combined with
 domain-specific goals, we can learn representations that are both
 interpretable and directly apply to analyzing larger systems.
 We illustrate the methodology on two traditional problems: 1) the
-pendulum, and 2) the continuous stirred tank reactor.
+pendulum, and 2) the continuous stirred tank reactor.}
 
-\end{abstract}
+\maketitle
 
 \begin{center}\rule{0.5\linewidth}{\linethickness}\end{center}
 
@@ -738,7 +746,7 @@ L(x) = \left\| x-D(E(x)) \right\|_2^2
 
 \begin{figure}
   \center
-\includegraphics[width=3in]{../figures/autoencoder_balance.png}
+\includegraphics[width=3in]{../figures/autoencoder_balance_detailed.png}
   \caption{\label{fig:balance}Illustration of the insert of the encoder to form the
   description of the system of equation. The equations
   of motion are generated in a declarative programming methodology,
