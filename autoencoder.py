@@ -202,8 +202,11 @@ class PolyAutoencoder(Autoencoder):
         
     def encode(self, x, name=None):
         N_coeff = atu.Npolyexpand( self.size_x, self.Np_enc )
-        We1 = self._var("enc_W", (N_coeff, self.size_q),
-                        initial_value = encoder_init_options[self.encoder_init])
+        if self.encoder_init in encoder_init_options.keys():
+            We1 = self._var("enc_W", (N_coeff, self.size_q),
+                            initial_value = encoder_init_options[self.encoder_init])
+        else:
+            We1 = self._var("enc_W", (N_coeff, self.size_q) )
         be1 = self._var("enc_b", (self.size_q,) )
         q = tf.matmul( atu.polyexpand(x, self.Np_enc), We1 ) + be1
         return tf.identity(q,name=name)
@@ -213,7 +216,7 @@ class PolyAutoencoder(Autoencoder):
         N_coeff = atu.Npolyexpand( self.size_q, self.Np_dec )
         We1 = self._var("dec_W", (N_coeff, self.size_x) )
         be1 = self._var("dec_b", (self.size_x,) )
-        x = tf.matmul( atu.polyexpand(qpoly, self.Np_dec), We1 ) + be1
+        x = tf.matmul( qpoly, We1 ) + be1
         return tf.identity(x,name=name)
     
     
