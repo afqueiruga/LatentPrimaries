@@ -1,0 +1,13 @@
+A Learnable Simulator: using unsupervised learning in conjunction with  computational physics, applied to multiphase flow
+
+A novel approach incorporating physics-constrained machine learning into a macroscopic flow simulator is presented in which learned representations  are used to integrate along a latent space in time using known fundamental physical laws. 
+This new ML-based simulator is applied to subsurface flow problems, where the biggest challenge is the equation of state (EOS) representation of complex fluids with multiple phases. The combination of theory and empirical fits are difficult to derive and program, becoming combinatorially more complex as species and phases are added, and ultimately have poor numerical properties for convergence and efficiency. In this approach, an autoencoder is used to learn a new representation of the EOS that is both easier to implement and computationally efficient. 
+Whereas the state-of-the-art simulators solve for a changing set of thermodynamic primary variables while keeping track of phase states, this method transforms the degrees of freedom into coordinates in the latent space, which are time-integrated using explicitly specified balance laws. 
+
+The methodology is demonstrated with various equation of states; including water spanning the liquid, gas, ice Ih, and supercritical regimes; and methane-water hydrate-bearing mixtures spanning 13 phase states applicable to reservoir studies. 
+A thermodynamics-informed model architecture is designed that is able to identify distinct phases through unsupervised learning from the datasets of thermodynamic quantities.
+After training multiple models in a hyperparameter search, an automated testing process evaluates each of the models—potential implementations of an EOS module—by solving a suite of test problems. The final top-performing models are shown to pass a variety of test problems involving phase changes, exhibiting numerical stability and achieving quadratic convergence, demonstrating suitability as a new simulation implementation. The software implementation will be described in detail, whereby the entire reservoir simulator is essentially implemented in TensorFlow. 
+
+The proposed methodology allows for rapid implementation of new material behaviors into predictive simulators given potentially more complex data from other domains beyond equations of state, cutting down development time while improving ultimate computational performance.
+The software design allows for differentiation through the entire simulator, will potentially enable the entire simulator to be trained on time-series observations to enable learning new physical processes or site-specific details directly in the context of a usable simulator.
+

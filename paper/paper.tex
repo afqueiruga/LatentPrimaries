@@ -135,19 +135,17 @@
 \title{Solution of Differential Algebraic Equations with Local Constraints
 on the Latent Space of an Autoencoder}
 \author[1]{Alejandro Francisco Queiruga*}
-\address[1]{
-  \orgdiv{Energy Geosciences Division}, \orgname{Lawrence Berkeley
+\address[1]{\orgdiv{Energy Geosciences Division}, \orgname{Lawrence Berkeley
     National Laboratory}, \orgaddress{\state{CA}}, \country{USA}}
 \corres{*\email{afqueiruga@lbl.gov}}
 
 \received{\today}
 \revised{\today}
 
-\jnlcitation{\cname{Queiruga, A.}\ctitle{Solution of DAEs on Latent Spaces},\cjournal{I. J. Num. Meth. Eng.}, \cvol{2019;00:1--2}}
 
 \begin{document}
 
-\abstract[Summary]{
+\abstract[Abstract]{
   Multiphase simulation is hard.
 Our proposed method is motivated by the problems of multiphase reaction and
 transport, where the underlying constraints are the ill-behaved material
@@ -178,6 +176,10 @@ domain-specific goals, we can learn representations that are both
 interpretable and directly apply to analyzing larger systems.
 We illustrate the methodology on two traditional problems: 1) the
 pendulum, and 2) the continuous stirred tank reactor.}
+
+\jnlcitation{\cname{Queiruga, A.}\ctitle{Solution of DAEs on Latent Spaces},\cjournal{I. J. Num. Meth. Eng.}, \cvol{2019;00:1--2}}
+
+\keywords{Class file; \LaTeXe; \emph{Wiley NJD}}
 
 \maketitle
 
@@ -626,25 +628,26 @@ and iterate on the nondifferential part:
 The phase switching logic has the form of a switch case illustrated in
 Algorithm \ref{alg:statemachine}.
 
+ 
 \begin{algorithm}
-  \caption{\label{alg:statemachine}Statemachine transition logic}
-\begin{Shaded}
-\begin{Highlighting}[]
-\ControlFlowTok{switch}\NormalTok{ phase_old:}
-  \ControlFlowTok{case}\NormalTok{ gas:}
-    \ControlFlowTok{if}\NormalTok{ p,T crossing boundary:}
-\NormalTok{      phase_new = liquid_gas}
-  \ControlFlowTok{case}\NormalTok{ liquid:}
-    \ControlFlowTok{if}\NormalTok{ p,T crossing boundary:}
-\NormalTok{      phase_new = liquid_gas}
-  \ControlFlowTok{case}\NormalTok{ liquid_gas:}
-    \ControlFlowTok{if}\NormalTok{ S_gas >= }\DecValTok{1}\NormalTok{:}
-\NormalTok{      phase_new = gas}
-    \ControlFlowTok{if}\NormalTok{ S_liquid >= }\DecValTok{1}\NormalTok{:}
-\NormalTok{      phase_new = gas}
-\end{Highlighting}
-\end{Shaded}
+\begin{lstlisting}[caption={Finite State Machine transition logic}, label={alg:statemachine}]
+switch phase_old:
+  case gas:
+    if p,T crossing boundary:
+      phase_new = liquid_gas
+  case liquid:
+    if p,T crossing boundary:
+      phase_new = liquid_gas
+  case liquid_gas:
+    if S_gas >= 1:
+      phase_new = gas
+    if S_liquid >= 1:
+      phase_new = gas
+\end{lstlisting}
 \end{algorithm}
+%  \begin{verbatim}
+
+%\end{verbatim}
 
 \hypertarget{header-n3262}{%
 \subsection{A constrained Differential Algebraic
@@ -1540,6 +1543,7 @@ systemic way to derive, e.g., an \(H_2O + NaCl\) equation of state with
 architecture with 2 degrees of freedom.
 
 \section*{Acknowlegements}
+%\acks
 
 This work was supported by Department of Energy, Office of Fossil
 Energy contracts
