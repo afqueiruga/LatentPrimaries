@@ -227,6 +227,35 @@ class LatentSim():
             rho_h/rho*mflux + k_T*(T_inf-T)+heat_source],axis=-1)
         return m, rate
     
+    def build_flux(self):
+        self.i_XA = tf.placeholder(name='i_XA',shape=(None,2),dtype=self.dtype)
+        self.i_XB = tf.placeholder(name='i_XB',shape=(None,2),dtype=self.dtype)
+        self.i_q2 = tf.placeholder(name='i_q2',shape=(None,2),dtype=self.dtype)
+        self.o_s2 = replicate_subgraph(self.o_s,{self.i_q:i_q2})
+        TA,pA,rhoA,rho_hA = tf.split(self.o_s,4,axis=-1)
+        TB,pB,rhoB,rho_hB = tf.split(self.o_s2,4,axis=-1)
+        F = self.flux(TA,pA,rhoA,rho_hA,
+                      TB,pB,rhoB,rho_hB,
+                     self.i_XA,self.i_XB)
+        return F
+    
+    def flux(self,TA,pA,rhoA,rho_hA,
+                  TB,pB,rhoB,rho_hB,
+                  XA,XB):
+        k_p =   self.regvar( "k_p", 10.0)
+        k_T =   self.regvar( "k_T", 10.0)
+        g = self.regvar("g",[0,-9.81])
+        L = tf.norm(XA-XB)
+        mflux = k_p * (pB - pA) / L - tf.einsum('ij,ij->i',g,(XB-XA)/L)
+        qflux = k_T * (TB - TA) / L
+        F = tf.concat([
+            mflux,
+            qflux + mflux*rho_hbar/rhobar,
+            - mflux,
+            - (qflux + mflux*rho_hbar/rhobar),
+        ])
+        return F
+    
     def set_params(self, **kwargs):
         """Set a value k = v in the current session."""
         for k,v in kwargs.items():
