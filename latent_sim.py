@@ -189,7 +189,7 @@ class LatentSim():
                 'Trap':0.5}[method]
         with self._graph.as_default():
             aii = self.regvar('aii',aii)
-            Dt  = self.regvar('Dt',0.1)
+            Dt  = self.regvar('Dt',1.0)
 
             T,p,rho,rho_h = tf.split(self.o_s,4,axis=-1)
             m,r = self.m_and_r( T,p,rho,rho_h )
@@ -237,7 +237,7 @@ class LatentSim():
         regard."""
         qi = q0.copy()
         rhs_0 = self._sess.run(self.rhs,feed_dict={self.i_q:q0})
-        for k in range(500):
+        for k in range(100):
             K_k,lhs_k = self._sess.run([self.K_lhs,self.lhs], feed_dict ={self.i_q:qi})
             R = rhs_0 - lhs_k
             Dq = np.linalg.solve(K_k[0,:,:],R[0,:])
@@ -278,6 +278,6 @@ class LatentSim():
                 break
             if verbose:
                 print(t,k,nDq)
-            timeseries.append(np.c_[t,q,self.decode(q)])
+            timeseries.append(np.c_[t,q,self.decode(q),k])
         return np.vstack(timeseries)
         
