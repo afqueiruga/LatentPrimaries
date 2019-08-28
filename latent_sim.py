@@ -10,6 +10,8 @@ def unshift(x, scale):
 def shift(x,scale):
     return (x-scale[0,:])/(scale[2,:]-scale[1,:])
 
+
+
 class LatentSim():
     """Object for storing a simulation state"""
     def __init__(self, model_loc,scale_file="", logp=True, method="BWEuler"):
@@ -228,32 +230,38 @@ class LatentSim():
         return m, rate
     
     def build_flux(self):
-        self.i_XA = tf.placeholder(name='i_XA',shape=(None,2),dtype=self.dtype)
-        self.i_XB = tf.placeholder(name='i_XB',shape=(None,2),dtype=self.dtype)
-        self.i_q2 = tf.placeholder(name='i_q2',shape=(None,2),dtype=self.dtype)
-        self.o_s2 = replicate_subgraph(self.o_s,{self.i_q:i_q2})
-        TA,pA,rhoA,rho_hA = tf.split(self.o_s,4,axis=-1)
-        TB,pB,rhoB,rho_hB = tf.split(self.o_s2,4,axis=-1)
-        F = self.flux(TA,pA,rhoA,rho_hA,
-                      TB,pB,rhoB,rho_hB,
-                     self.i_XA,self.i_XB)
-        return F
-    
+        with self._graph.as_default():
+            self.i_XA = tf.placeholder(name='i_XA',shape=(None,2),dtype=self.dtype)
+            self.i_XB = tf.placeholder(name='i_XB',shape=(None,2),dtype=self.dtype)
+            self.i_q2 = tf.placeholder(name='i_q2',shape=(None,2),dtype=self.dtype)
+            self.o_s2 = atu.replicate_subgraph(self.o_s,{self.i_q:self.i_q2})
+            TA,pA,rhoA,rho_hA = tf.split(self.o_s,4,axis=-1)
+            TB,pB,rhoB,rho_hB = tf.split(self.o_s2,4,axis=-1)
+            self.o_F = self.flux(TA,pA,rhoA,rho_hA,
+                          TB,pB,rhoB,rho_hB,
+                          self.i_XA,self.i_XB)
+
+            #self.o_KF = atu.vector_gradient_dep(self.o_F,tf.stack([self.i_q,self.i_q2]))
+        self._sess.run(tf.variables_initializer(self._vars.values()))
+        
     def flux(self,TA,pA,rhoA,rho_hA,
                   TB,pB,rhoB,rho_hB,
                   XA,XB):
         k_p =   self.regvar( "k_p", 10.0)
         k_T =   self.regvar( "k_T", 10.0)
         g = self.regvar("g",[0,-9.81])
-        L = tf.norm(XA-XB)
-        mflux = k_p * (pB - pA) / L - tf.einsum('ij,ij->i',g,(XB-XA)/L)
-        qflux = k_T * (TB - TA) / L
+        L = tf.norm(XA-XB,axis=-1)
+        n = tf.einsum('ij,i->ij',(XB-XA),(1.0/L))
+        mflux = k_p * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) )  - tf.expand_dims(tf.einsum('j,ij->i',g, n),axis=-1 ) )
+        qflux = k_T * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) ) )
+        rhobar = (rhoB + rhoA)/2.0
+        rho_hbar = (rho_hB + rho_hA)/2.0
         F = tf.concat([
             mflux,
             qflux + mflux*rho_hbar/rhobar,
             - mflux,
             - (qflux + mflux*rho_hbar/rhobar),
-        ])
+        ],axis=-1)
         return F
     
     def set_params(self, **kwargs):
