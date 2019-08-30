@@ -240,8 +240,9 @@ class LatentSim():
             self.o_F = self.flux(TA,pA,rhoA,rho_hA,
                           TB,pB,rhoB,rho_hB,
                           self.i_XA,self.i_XB)
-
-            #self.o_KF = atu.vector_gradient_dep(self.o_F,tf.stack([self.i_q,self.i_q2]))
+            
+            self.o_KF = tf.concat([atu.vector_gradient_dep(self.o_F,self.i_q),
+                                   atu.vector_gradient_dep(self.o_F,self.i_q2)],axis=-1)
         self._sess.run(tf.variables_initializer(self._vars.values()))
         
     def flux(self,TA,pA,rhoA,rho_hA,
@@ -252,7 +253,8 @@ class LatentSim():
         g = self.regvar("g",[0,-9.81])
         L = tf.norm(XA-XB,axis=-1)
         n = tf.einsum('ij,i->ij',(XB-XA),(1.0/L))
-        mflux = k_p * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) )  - tf.expand_dims(tf.einsum('j,ij->i',g, n),axis=-1 ) )
+        grav_forcing = tf.expand_dims(tf.einsum('j,ij->i',g, n),axis=-1 )
+        mflux = k_p * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) )  - grav_forcing )
         qflux = k_T * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) ) )
         rhobar = (rhoB + rhoA)/2.0
         rho_hbar = (rho_hB + rho_hA)/2.0
