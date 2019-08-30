@@ -256,14 +256,14 @@ class LatentSim():
         rhobar = (rhoB + rhoA)/2.0
         rho_hbar = (rho_hB + rho_hA)/2.0
         grav_forcing = rhobar*tf.expand_dims(tf.einsum('j,ij->i',g, n),axis=-1 )
-        mflux = k_p * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) )  - grav_forcing )
-        qflux = k_T * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) ) )
+        mflux = k_p * ( tf.einsum('ij,i->ij',(pB - pA),(1.0/L) ) + grav_forcing )
+        qflux = k_T * ( tf.einsum('ij,i->ij',(TB - TA),(1.0/L) ) )
 
         F = tf.concat([
             mflux,
-            qflux + mflux*rho_hbar/rhobar,
+            qflux,# + mflux*rho_hbar/rhobar,
             - mflux,
-            - (qflux + mflux*rho_hbar/rhobar),
+            - qflux, #(qflux + mflux*rho_hbar/rhobar),
         ],axis=-1)
         return F
     
