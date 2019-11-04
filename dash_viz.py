@@ -6,6 +6,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
+import plotly.offline as py
 import dash_table
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css'] #'https://codepen.io/anon/pen/mardKv.css']
@@ -54,6 +55,12 @@ graph_radio = dcc.RadioItems(
     value='rho',
     labelStyle={'display': 'inline-block'}
 )
+graph_text = dcc.Textarea(
+    id='graph-text',
+    placeholder = "code appears here",
+    value="code appears here",
+    style={'width':'100%'},
+)
 # Select eos problem
 problem_dropdown = dcc.Dropdown(id='problem-selected',
                                 options=[{'label':k,'value':k} for k in test_cfg.all_test_problems],
@@ -85,7 +92,9 @@ layout = ROW([
         COL([eos_dropdown],"ten"),
     ]),
     dcc.Graph(id="3d-graph"),
+    
     ROW([COL(select_button,"two"),COL([graph_radio],"six"), COL([problem_dropdown],"four") ]),
+    graph_text,
     table,
 ])
 
@@ -129,7 +138,7 @@ def select_all(n_clicks, all_rows, selected_rows):
 
 # Select individual graphs
 @app.callback(
-    Output("3d-graph", "figure"),
+    [Output("3d-graph", "figure"),Output('graph-text','value')],
     [Input("eos-selected",'value'),
      Input("select-table", "selected_row_ids"),
      Input("graph-radio","value"),
@@ -139,30 +148,38 @@ def update_graph(eos,selected,radio,problem_selected):
     if selected is None: 
         selected = []
     print("this callback", eos, selected)
+    text = ""
     ctx = dash.callback_context
     if radio in ['rho','rho*h']:
         figure = gen_graph_viewport(eos,selected,z=radio)
+        text = f"""gen_graph_viewport("{eos}","{selected}",z="{radio}")"""
     elif radio == 'training':
         lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
                          if k in loaded[eos].train_scores.keys() }
         figure = ls_plot.make_training_plot(lines_to_plot)
+        text = f"ls_plot.make_training_plot({lines_to_plot})"
     elif radio == 'simulations':
         arch_filter = [ k for k in selected if k in loaded[eos].train_scores.keys() ]
         print(arch_filter)
         try:
             figure = ls_plot.plotly_query_simulations(problem_selected,eos,
                                                    arch_filter=arch_filter)
+            text = f"""ls_plot.plotly_query_simulations("{problem_selected}","{eos}",
+                                                   arch_filter={arch_filter})"""
+
 #             print(figure)
         except:
             print(f"No entry found for {eos} solving {problem_selected}")
             figure = None
+            text = f"Error making plot"
     else:
         print("No radio button defined as ",radio)
         lines_to_plot = {k:loaded[eos].train_scores[k] for k in selected 
                          if k in loaded[eos].train_scores.keys() }
         figure = ls_plot.make_training_plot(lines_to_plot)
-
-    return figure
+        text = f"ls_plot.make_training_plot({lines_to_plot})"
+    py.plot(figure,filename="./dash_current_figure.html")
+    return figure, text
     
     
 app.layout = layout
