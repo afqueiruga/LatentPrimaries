@@ -61,7 +61,7 @@ class Hot_Gas():
 class Hot_Gas_Fill():
     t_max = 1000.0
     initial = dict(T=450,p=5.0e5, phase="Gas")
-    params =  dict(mass_source=0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    params =  dict(mass_source=0.1,k_p=0.0,k_T=0.0, Dt=t_max/100.0)
     @staticmethod
     def schedule(sim,t):
         pass
@@ -72,7 +72,7 @@ class Hot_Gas_Fill():
 class Transition_L2G():
     t_max = 10.0
     initial = dict(T=350,p=5.0e5, phase="Liquid")
-    params =  dict(k_p=1.0e-2,k_T=1.0e7, Dt=t_max/1000.0)
+    params =  dict(k_p=1.0e-2,k_T=1.0e7, Dt=t_max/100.0)
     @staticmethod
     def schedule(sim,t):
         sim.set_params(T_inf=350,p_inf=5.0e3)
@@ -81,9 +81,9 @@ class Transition_L2G():
         h  =iapws97.enthalpy_region2(350.0,5.0e3) )
     
 class Transition_L2G_Drain():
-    t_max = 10.0
+    t_max = 10000.0
     initial = dict(T=350,p=5.0e5, phase="Liquid")
-    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=1.0)
     @staticmethod
     def schedule(sim,t):
         pass
@@ -94,7 +94,7 @@ class Transition_L2G_Drain():
 class Liquid_Drain():
     t_max = 2000.0
     initial = dict(T=373.15,p=3.0e5, phase="Liquid")
-    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/1000.0)
+    params =  dict(mass_source=-0.1,k_p=0.0,k_T=0.0, Dt=t_max/100.0)
     @staticmethod
     def schedule(sim,t):
         pass
