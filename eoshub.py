@@ -52,6 +52,21 @@ class LazyLoad():
             self.cache[key] = rez
             return rez
         
+    def eos_loadout(self, eos, network=None):
+        """
+        Parse the database and get the arguments that construct
+        the simulator.
+        """
+        if network is None:
+            network = self[eos].archs[0]
+        for dataset_match in test_cfg.eos_test_cfg:
+            if dataset_match in eos:
+                scale_file = test_cfg.eos_test_cfg[dataset_match]['scale_file']
+                logp = test_cfg.eos_test_cfg[dataset_match]['logp']
+                break
+        args = (self._eos_dir(eos)+'/'+network,scale_file,logp)
+        return args
+    
     def LatentSim(self, eos,network=None):
         """
         Create a latent sim object, or fetch-and-wipe one that's
@@ -62,12 +77,8 @@ class LazyLoad():
         try:
             ls = self.sims[(eos,network)]
         except KeyError:
-            for dataset_match in test_cfg.eos_test_cfg:
-                if dataset_match in eos:
-                    scale_file = test_cfg.eos_test_cfg[dataset_match]['scale_file']
-                    logp = test_cfg.eos_test_cfg[dataset_match]['logp']
-                    break
-            ls = LatentSim(self._eos_dir(eos)+'/'+network,scale_file,logp)
+            args = eos_loadout(eos, network)
+            ls = LatentSim(*args)
             self.sims[(eos,network)] = ls
         return ls
     
