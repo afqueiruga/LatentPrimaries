@@ -77,7 +77,7 @@ class LazyLoad():
         try:
             ls = self.sims[(eos,network)]
         except KeyError:
-            args = eos_loadout(eos, network)
+            args = self.eos_loadout(eos, network)
             ls = LatentSim(*args)
             self.sims[(eos,network)] = ls
         return ls

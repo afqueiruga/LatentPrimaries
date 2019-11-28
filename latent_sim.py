@@ -230,6 +230,7 @@ class LatentSim():
         return m, rate
     
     def build_flux(self):
+        """This should really go into the child LatentFlow."""
         with self._graph.as_default():
             self.i_XA = tf.placeholder(name='i_XA',shape=(None,2),dtype=self.dtype)
             self.i_XB = tf.placeholder(name='i_XB',shape=(None,2),dtype=self.dtype)
