@@ -30,7 +30,7 @@ o_R = pc.Output('R',(Vol_2Vec,),1)
 o_K = pc.Output('K',(Vol_2Vec,),2)
 pc.Kernel('idty_2_R',listing=[
     pc.Asgn(o_R,i_R),
-])
+])a
 pc.Kernel('idty_2_RK',listing=[
     pc.Asgn(o_R,i_R),
     pc.Asgn(o_K,i_K.reshape(4,4))
