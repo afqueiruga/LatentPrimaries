@@ -132,21 +132,20 @@
 % \makeatother
 
 
+\begin{document}
+
 \title{Solution of Differential Algebraic Equations with Local Constraints
 on the Latent Space of an Autoencoder}
 \author[1]{Alejandro Francisco Queiruga*}
-\address[1]{\orgdiv{Energy Geosciences Division}, \orgname{Lawrence Berkeley
-    National Laboratory}, \orgaddress{\state{CA}}, \country{USA}}
+\address[1]{\orgdiv{Energy Geosciences Division}, \orgname{Lawrence Berkeley National Laboratory}, \orgaddress{\state{CA}}, \country{USA}}
 \corres{*\email{afqueiruga@lbl.gov}}
+
+
 
 \received{\today}
 \revised{\today}
 
-
-\begin{document}
-
-\abstract[Abstract]{
-  Multiphase simulation is hard.
+\abstract[Abstract]{ Multiphase simulation is hard.
 Our proposed method is motivated by the problems of multiphase reaction and
 transport, where the underlying constraints are the ill-behaved material
 properties which are difficult to describe.
@@ -177,9 +176,9 @@ interpretable and directly apply to analyzing larger systems.
 We illustrate the methodology on two traditional problems: 1) the
 pendulum, and 2) the continuous stirred tank reactor.}
 
-\jnlcitation{\cname{Queiruga, A.}\ctitle{Solution of DAEs on Latent Spaces},\cjournal{I. J. Num. Meth. Eng.}, \cvol{2019;00:1--2}}
+\jnlcitation{} %\cname{Queiruga, A.}\ctitle{Solution of DAEs on Latent Spaces},\cjournal{I. J. Num. Meth. Eng.}, \cvol{2019;00:1--2}
 
-\keywords{Class file; \LaTeXe; \emph{Wiley NJD}}
+\keywords{}
 
 \maketitle
 
@@ -471,23 +470,20 @@ For water, three phases can exist in equilibrium. Given more species, it is poss
 to be in equilibrium; there is a quadruple point in methane-water
 hydrates.
 
-Note that the definition of enthalpy as a per-mass quanitity means the mixture needs to be weighted by the
+Note that the definition of enthalpy as a per-mass quantity means the mixture needs to be weighted by the
 density: $h_{mix}=\sum{\rho_a h_aS_a}/\sum{rho_aS_a}$.
 
 But, what is a phase boundary? The traditional explanation is shown in
 Figure \ref{fig:phaseboundaries}. The use of intensive properties breaks down:\footnote{https://en.wikipedia.org/wiki/Phase\_transition}
-
 \begin{quote}
 Phase transitions occur when the thermodynamic free energy of a system
 is non-analytic for some choice of thermodynamic variables (cf. phases).
 \end{quote}
-
-
-{\bf Remark:} This interpretation breaks down with the existenceof super-saturated phases in non-stable regions: e.g., it is possible to
+{\bf Remark:} This interpretation breaks down with the existence of super-saturated phases in non-stable regions: e.g., it is possible to
 heat water beyond it's boiling point in a microwave. We are concerned
 with environments where this would not happen (the very rough and
-heterogenous) pores of rocks, so we have not thought of how to
-integrate this problem.
+heterogenous pores of rocks), so we have not thought of how to
+integrate this behavior.
 
 \subsection{Forms of Equations of State}
 
@@ -497,8 +493,8 @@ Properties of Water Steam (IAPWS) using a variety of experimental
 sources for multiple phases \cite{wagner_iapws_2000,
   water_revised_2007, water_revised_2009}. We utilize the 1997
 formulation for water gas, liquid, and supercritical phases, and the
-2006 formulation for the Ice Ih phase to build the dataset.\footnote{Our
-implementation is publicly available at GITHUB:EOS.} (Their
+2006 formulation for the Ice Ih phase to build the dataset.\footnote{The
+implementation is publicly available as a stand-alone library at \url{https://github.com/afqueiruga/equations\_of\_state}.} (Their
 painstaking work in determining the forms of decent fits is a great
 motivation for a 21st century approach.)
 We can also assemble the surface of possible $T,p,\rho$ coordinates,
@@ -548,10 +544,10 @@ states \cite{moridis_simulation_2019}.
 
 
 {\bf Remark:} Many popular forms of EOS do not even have closed form
-expressions. The family of cubic equations of state for nonideal
-gases, such as the Peng-Robinsion equation \cite{peng_new_1976}, are
+expressions. The family of cubic equations of state for non-ideal
+gases, such as the Peng-Robinson equation \cite{peng_new_1976}, are
 expressed as functions for $p$ of $V$ (a proxy for $\rho$) and
-$T$. Since $\rho$ is rarely a primary varibale, these expressions must be inverted for
+$T$. Since $\rho$ is rarely a primary variable, these expressions must be inverted for
 $\rho$ given $p$ by solving the cubic equation. This can be performed
 analytically, as is done in TOUGH+, but often polynomial roots can
 be best solved numerically. When the equations become more
@@ -561,7 +557,7 @@ iteration \cite{moridis_users_2014-2}.
 Note how this is a numerical
 iteration {\em inside} of another numerical iteration that is trying
 to differentiation this equation state. Approximations
-abound--the mathematical theory is not straight foward. Passing
+abound--the mathematical theory is not straight forward. Passing
 automatic differentiation objects through these computations is
 difficult in practice. Equations are
 often solved faster and more accurately by numerical
@@ -607,7 +603,7 @@ variables. For a pure water system, this would have to be:
   Ice-Gas-Liquid & $S_{ice}$ & $S_{gas}$ 
 \end{tabular}
 \end{center}
-Solving the balance laws with this caveat requires the incorpoeration
+Solving the balance laws with this caveat requires the incorporation
 of a statemachine. Representing the material with the known
 representations thus requires two variables and an additional state
 tag. For the complete states of water, the states and their possible
@@ -617,18 +613,36 @@ transitions is shown in Figure \ref{fig:statemachine}.
     \includegraphics[width=4in]{../slides/phase_4.png}
     \caption{\label{fig:statemachine}States and possible transitions for water.}
 \end{figure}
-Formulate balance equations as
+The discretized balance equations become a nonlinear function of
+continuous variables $X$ and discrete indices $phase$:
 \begin{equation}
 R(X ; phase) = 0
 \end{equation}
-Solve the differentiable part:
-\[\frac{\partial R}{\partial X}\Delta X^{k+1/2} = -R(X^k ; phase^k)\]
-and iterate on the nondifferential part:
-\[phase^{k+1},X^{k+1} = statemachine(X^{k+1/2} ; phase^k)\]
+where the meaning of $X$ is dictated by $phase$. Solving this equation
+requires first iterating on the differentiable part by solving the
+Jacobian matrix,
+\begin{equation}
+  \frac{\partial R}{\partial X}\Delta X^{k+1/2} = -R(X^k ; phase^k)
+\end{equation}
+and the iterating the non-differentiable state machine part:
+\begin{equation} \label{eq:fsm}
+  phase^{k+1},X^{k+1} = statemachine(X^{k+1/2} ; phase^k)
+\end{equation}
 The phase switching logic has the form of a switch case illustrated in
-Algorithm \ref{alg:statemachine}.
+Algorithm \ref{alg:statemachine}. This converges quadratically in
+situations where no phases changes occur, but execution of
+Eq. \ref{eq:fsm} breakdown into linear convergence or even divergence.
+This often contains the presence of ``tricks'' such as overshoots to
+push the grid blocks over the edge, $P_{new}=(1+10^{-6} )P_{old}$, or
+artificially smoothing the phase boundaries
+\citep{moridis_simulation_2019}. 
+ Besides the computational difficulties, from a software
+engineering standpoint, the long and winding logical branches are very
+difficult to maintain and extend with new physics. The presence of the state machine and implicit equations inside of the
+material descriptions also requires numerical differentiation, which is
+a further numerical challenge. The engineering
+difficulty further makes it difficult to improve the efficiencies of the implementations.
 
- 
 \begin{algorithm}
 \begin{lstlisting}[caption={Finite State Machine transition logic}, label={alg:statemachine}]
 switch phase_old:
@@ -686,8 +700,7 @@ and robust fit. What if we search for a new fit?
 
 An archetypical constraint problem is the pendulum. Posed as dynamics
 problem with a Lagrange-multipler-esque centripetal force, it
-has three unknowns wtih two second-order equations and a constraint,
-
+has three unknowns with two second-order equations and a constraint,
 \begin{align}
 \text{Solve for}\, x(t), \, y(t), \, f(t) \, \text{satisfying:} \nonumber \\
 m \ddot{x} & = f x/\sqrt{x^2+y^2} \\
@@ -749,7 +762,7 @@ L(x) = \left\| x-D(E(x)) \right\|_2^2
 
 \begin{figure}
   \center
-\includegraphics[width=3in]{../figures/autoencoder_balance_detailed.png}
+\includegraphics[width=5in]{../figures/autoencoder_balance_detailed.png}
   \caption{\label{fig:balance}Illustration of the insert of the encoder to form the
   description of the system of equation. The equations
   of motion are generated in a declarative programming methodology,
@@ -795,12 +808,12 @@ Solutions are shown in Figure \ref{fig:pendulum}.
 
 \hypertarget{header-n3294}{%
 \section{Representation Learning for
-Reparameterization}\label{header-n3294}}
+Re-parameterization}\label{header-n3294}}
 
 The central idea of this work is to obtain two new variables solve for
 those directly which have no physical meaning other than simply being a
 parameterization of the equation of state constraint. We want to select a
-\(q_1\) and \(q_2\) to require no auxilary phase index to define the system
+\(q_1\) and \(q_2\) to require no auxiliary phase index to define the system
 and no additional logic in the code. The sharp kinks and possible
 discontinuities can be a part of the functions
 \(\rho(q_1, q_2), p(q_1, q_2), h(q_1, q_2)\) and \(T(q_1, q_2)\).
@@ -812,7 +825,7 @@ discontinuities can be a part of the functions
 Instead of the painstaking work of parameterizing phase boundaries and
 determining curve fits by hand, we rephrase the problem of representing
 the equation of state by learning and autoencoder. We have an encoding
-phase, \(E(\rho,p,e,T; a)\) and a decoding phase, \(D(u,v; b)\) that
+phase, $E(\rho,p,e,T; a)$ and a decoding phase, $D(u,v; b)$ that
 forms an identity function with a compressed subspace:
 \begin{equation}
 \left\{ \begin{array}{c}
@@ -841,7 +854,9 @@ easily inside a finite volume simulation with little change.
 
 We use a Euclidean norm loss function with a contractive penalty:
 
-\[L(x)=\left\|x-D(E(x))\right\|^2_2+\lambda\left\|\frac{\partial E}{\partial x}\right\|_F^2\]
+\begin{equation}
+L(x)=\left\|x-D(E(x))\right\|^2_2+\lambda\left\|\frac{\partial E}{\partial x}\right\|_F^2
+\end{equation}
 
 The gradient on the encoder is a \(4\times2\) matrix in our case, and
 \(\|\|_F\) denotes the Frobenius norm. The contractive penalty
@@ -860,10 +875,10 @@ phase boundaries.
 The dataset is split into a standard $2/3-1/6-1/6$ division into
 training-testing-validation groups. We note that we can always
 manufacture more datapoints. We train by alternating phases. The first
-step is minibatched stochastic descent on the entire deep network, assembling the losses on minibatches of the data, $X_{mini}$,
+step is mini-batched stochastic gradient descent on the entire deep network, assembling the losses on minibatches of the data, $X_{mini}$,
 \begin{equation}
-  L(X_{mini}) = \sum_{x\in X_{mini}} L(x)
-  \end{equation}
+L(X_{mini}) = \sum_{x\in X_{mini}} L(x)
+\end{equation}
 to perform the out-of-the-box ADAM optimizer on all of the
 parameters in the networks. (The box is
 TensorFlow.) After a few epochs of this,
@@ -873,22 +888,22 @@ denoted by \(W^{dec}\), which directly controls the magnitudes of the values.
 system that needs to be solved is easily generated by assembling the
 gradient and Hessian of the total loss function,
 \begin{align}
- \mathbf{G}\left(X_{train}\right) &= \sum_{x\in X_{train}}\frac{\partial L}{\partial W^{dec}} \\
+\mathbf{G}\left(X_{train}\right) &= \sum_{x\in X_{train}}\frac{\partial L}{\partial W^{dec}} \\
 \mathbf{H}\left(X_{train}\right) &= \sum_{x\in X_{train}}\frac{\partial^2 L}{\partial (W^{dec})^2}
 \end{align}
 and solving the linear system for an update to the last parameters.
 
-\[[\mathbf{H}] \Delta W^{dec} = -\{\mathbf{G}\}\]
+\begin{equation}
+[\mathbf{H}] \Delta W^{dec} = -\{\mathbf{G}\}\]
+\end{equation}
 
 To form the hessian and gradient for this step, we sum over all of the
 training data. (The contractive penalty term drops out of the this step because it does
 not depend on \(W^{dec}\).)
-
 \begin{equation}
 \bar{H}_{ij} = H_{ij} + \left(\delta_{ij}\,\text{if}\,H_{ik}=0\forall k\right)
-  \end{equation}
-
-For this step in which only the back-end regression is performmed, each set of coefficients for the curves for each variable is independent from those of the other variables: e.g., the coefficients to the sets of polynomials that parameterize $p(q)$ do not depend on those for $T(q)$. This means that this step can be performmed in blocks, performing the linear step for each component independently, at a great reduction of cost. For the full system, 3/4 of the entries are zero. We did not bother performing this optimization, but note that the savings are quadratic as the number of coefficients grow for more complex equations of state. (This is not true for training the entire deep network: it is only true for this linear regression step on the sub-network.)
+\end{equation}
+For this step in which only the back-end regression is performed, each set of coefficients for the curves for each variable is independent from those of the other variables: e.g., the coefficients to the sets of polynomials that parameterize $p(q)$ do not depend on those for $T(q)$. This means that this step can be performed in blocks, performing the linear step for each component independently, at a great reduction of cost. For the full system, 3/4 of the entries are zero. We did not bother performing this optimization, but note that the savings are quadratic as the number of coefficients grow for more complex equations of state. (This is not true for training the entire deep network: it is only true for this linear regression step on the sub-network.)
 
 
 \hypertarget{header-n3312}{%
@@ -982,11 +997,8 @@ For comparison purposes, we group together liquid-gas-supercritical as one conti
 \hypertarget{header-n3321}{%
 \section{Simulation}\label{header-n3321}}
 
-Examining the $T,p,\rho$ surface allows for human interpretability, but
-the decoder actually yields four new functions with two unknowns:
-$D(q)=\{T(q),p(q),\rho(q),h(q)\}$. These surfaces can be plotted as
-independent 2D functions: the surface of \ref{fig:classified} is
-unfolded into the new parameterization in Figure \ref{fig:foursurfaces}.
+\subsection{Single Grid Block}
+
 \begin{figure}
   \centering
   \includegraphics{../slides/water_four_surfaces_plot.png}
@@ -996,11 +1008,19 @@ unfolded into the new parameterization in Figure \ref{fig:foursurfaces}.
     but is an analytic and smooth function of the two learned unknowns.}
   \end{figure}
 
+  
+Examining the $T,p,\rho$ surface allows for human interpretability, but
+the decoder actually yields four new functions with two unknowns:
+$D(q)=\{T(q),p(q),\rho(q),h(q)\}$. These surfaces can be plotted as
+independent 2D functions: the surface of \ref{fig:classified} is
+unfolded into the new parameterization in Figure
+\ref{fig:foursurfaces}. These surfaces were designed to be smooth
+enough to solve effectively.
 With the trained model, we solve for \(q_1(t)\) and \(q_2(t)\) such that:
 \begin{align}
-\partial_t \rho(q_1,q_2) & = \mathbf{k} \left( p_\infty-p(q_1,q_2) \right)  + r \\
+\partial_t \rho(q_1,q_2) & = \mathbf{k} \left( p_\infty-p(q_1,q_2) \right)  + r \label{eq:massbalanceq}\\
 \partial_t \left(\rho h(q_1,q_2)-p\right) &
-                                            =\mathbf{k}_T(T_\infty-T(q_1,q_2))  + s + \frac{\rho h}{h}\left(\mathbf{k}_p(p_\infty - p) + r\right)
+                                            =\mathbf{k}_T(T_\infty-T(q_1,q_2))+ s + \frac{\rho h}{h}\left(\mathbf{k}_p(p_\infty - p) + r\right) \label{eq:heatbalanceq}
 \end{align}
 where the expressions for  \(\rho(q_1,q_2)\) etc. are the back of the
 trained autoencoder,. The trained
@@ -1019,27 +1039,23 @@ To develop the rest of the discretization, we introduce the compact form:
 eos(T,p,\rho,h) &= 0
 \end{align}
 where $m=\{\rho,\rho h -p\}$ and $r$ is the right hand side, where
-$eos(T,p,\rho,h)=0$ is the material constraint.
-
-
-The decoder part of the network is inserted into the balance law
+$eos(T,p,\rho,h)=0$ is the material constraint. The decoder part of the network is inserted into the balance law
 \begin{equation}
 \partial_t (D(q)) = r(D(q))
 \end{equation}
-We can parameterize this equation with any time stepping scheme, .e.g. a
+We can parameterize this equation with any time stepping scheme, e.g. a
 Runge-Kutta scheme. For subsurface flow, backward Euler is popular due
-to its simplicity and L-stability, which we follow since the topic of
+to its simplicity and L-stability. We make the same choice because the topic of
 this paper is not exploring new time stepping schemes. This yields the
 discretized algebraic equation for \(q_i\) and \(t+\Delta t\) given the
 value \(q^0\) at \(t\),
-
 \begin{equation}
-0 = R(q^i) = m(q^{i}) - m(q^{0}) - \Delta t \, r(q^i)
+0 = R(q^i) = m(q^{i}) - m(q^{0}) - \Delta t \, r(q^i) \label{eq:bweuler}
 \end{equation}
 where we have called the equation \(R(q)\). By design \(R(q)\) is smooth
 enough to solve with Newton's method without any statemachine logic:
 \begin{equation}
-\frac{\partial R}{\partial q} \Delta q^{k+1} = - R(q^k)
+\frac{\partial R}{\partial q} \Delta q^{k+1} = - R(q^k) \label{eq:jacobianq}
 \end{equation}
 with the update
 \begin{equation}
@@ -1051,8 +1067,8 @@ This equation is deceptively simple: the function $R(q)$ has complex logic encod
 statements appear if the model used activations such as rectifiers.
 However, the complex material behavior which traditionally requires
 the vast majority of programming was implemented automatically by the
-models; implementing equations XX, XX, and XX requires only a few lines
-of human-written code. 
+models; implementing equations \ref{eq:massbalanceq}, \ref{eq:heatbalanceq}, and \ref{eq:bweuler } requires only a few lines
+of human-written code. The iteration for \ref{eq:jacobianq} can be constructed entirely with automatic differentiation because the model is fully differentiable.
 
 \subsection{Dimensionalization}
 
@@ -1110,10 +1126,6 @@ test initial conditions is a common mode of detecting unacceptable
 network realizations; this is marked as a testing error during training
 which invalidates a model as a potential realization.
 
-The current implementation LatentSim does not support inputting via
-saturations on the equilibria, a commonly used primary variable, but
-this problem could be solved with future engineering work for a
-non-experimental simulator.
 
 For LatentSim, the input system is not yet as robust as a
 fully-fledged user-facing simulator, but the inputs are specified in
@@ -1124,8 +1136,12 @@ dictionary format,
     p=9e5 T=20
     rho=500 T=20
 \end{verbatim}
+The current implementation LatentSim does not support inputting via
+saturations on the equilibria, a commonly used primary variable, but
+this problem could be solved with future engineering work for a
+non-prototype simulator.
 Then, the simulator must determine $q(t=0)$ from these two
-values, but the econder only works when all four values are on the
+values, but the encoder only works when all four values are on the
 surface. Let $s=\{T,p,\rho,\rho h\}$ be a four dimensional
 variable of the stacked physical quantities. It is necessary to
 actually solve the following nonlinear problem
@@ -1156,12 +1172,13 @@ with the under-relaxation parameter that is usually set to $\alpha \approx
 The initial condition problem is not guaranteed to converge, however,
 and often does not.
 For example, if the initial guess was in the liquid phase and the target point
-in the EOS space is in a solid, the iteration will fail.
-To address this issue, we perform multiple starts with an initial condition in each
-phase and equilibrium, discard points that diverge, and then pick the
+in the EOS space is in a solid, the iteration will diverge.
+To address this issue, the solver performs multiple starts with an initial condition in each
+phase and equilibrium, discard points that diverge, and then picks the
 \(q\) that is closest to the two specified components. The multiple
 start points are specified at EOS development time to form a set of
-values that represent middle points for each phase,
+values that represent middle points for each phase, \footnote{The multistart method could be specified without any prior knowledge
+with random points, but picking start points with prior knowledge was necessary to test the cause of the divergence.}
 \begin{equation}
 \left\{s_{guess}\right\} = \left\{ \left(\begin{array}{c}
 \bar{T}_{gas}\\
@@ -1180,9 +1197,7 @@ values that represent middle points for each phase,
 \bar{\rho h}_{ice}
 \end{array}\right)... \right\}
   \end{equation}
-The multistart method could be specified without any prior knowledge
-with random points, but this is a sufficiently robust method for
-now. Each of the possible guess points is used to fill in the two
+Each of the possible guess points is used to fill in the two
 unspecified values as guesses and then passed into the encoder.
 E.g. if $p$ and $T$ were specified, each possible $\bar{\rho}$ and
 $\bar{h}$ combination from the above sets are filled in to provide
@@ -1195,7 +1210,7 @@ p^*(0)\\
 \bar{h}_{guess}
 \end{array}\right);\quad q^0_{guess}=E\left(s^0\right)
  \end{equation}
- These sets of $q^0_{guess}$ are then iterated upon using the Newton's
+These sets of $q^0_{guess}$ are then iterated upon using the Newton's
  method procedure. 
 
 It is further possible that none of the initial guesses for this iteration
@@ -1253,7 +1268,7 @@ verifying the training process.
 
 \begin{figure}
   \centering
-  \includegraphics[width=6in]{../figures/workflow_vector.pdf}
+  \includegraphics[width=4in]{../figures/workflow_vector.pdf}
   \caption{\label{fig:workflow}Work flow of the simulation programming process.}
 \end{figure}
 This process yields are more complicated simulation software system
@@ -1281,8 +1296,7 @@ ML process and produced low values of the loss function on testing and
 validation, but cannot be actually used in the simulation.
 This testing process is also used to determine the model that is
 optimal in terms of compute time and satisfactorily accurate.
-The ``best'' model can then be ``shipped'' (i.e., marked for
-deployment in DVC) to be automatically selected by the final end user,
+The ``best'' model can then be ``shipped''  to be automatically selected by the final end user,
 who only specifies the Equation of State.
 
 What is not shown in this figure is the testing of the data, and the
@@ -1308,7 +1322,7 @@ loop t=0 to t_max:
     solve for q[i]: R(q[i],q[i-1])=0
     decode s[i] = D(q[i])
 \end{verbatim}
-  \end{algorithm}
+\end{algorithm}
 
 \hypertarget{header-n3356}{%
 \section{Architecture}\label{header-n3356}}
@@ -1382,12 +1396,6 @@ The implementation of the empirical equations of state for water are
 factored out at
 \href{https://github.com/afqueiruga/equations_of_state}{https://github.com/afqueiruga/equations\_of\_state}.
 
-\subsection{Things we'll do differently}
-
-Adopt julia for at least the simulation
-
-
-
 \hypertarget{header-n3359}{%
 \section{Simulation Evaluation}\label{header-n3359}}
 
@@ -1454,49 +1462,6 @@ just needed to be extended.)
 \hypertarget{header-n3421}{%
 \section{Conclusions}\label{header-n3421}}
 
-\begin{itemize}
-\item
-  Deep learning to replace and improve hand-baked equations and
-  algorithms
-\item
-\item
-  \textbf{Only training the material representation, not the balance
-  laws}
-\item
-  Extend to more complicated materials
-\item
-  Put into a flow simulation
-\item
-  Close loop on testing with reinforcement learning
-\end{itemize}
-
-The ultimate goal for this work is to automate integration of data
-analysis into simulation.
-
-We hypothesize this end-to-end approach will allow the system to develop
-\emph{better} simulations \emph{faster}.
-
-We demonstrated a specially crafted architecture whose parameters can be
-human interpretted and perform unsupervised phase/equilibria
-classification.
-
-We illustrated a programming model that is able to incorporate machine
-learning models into existing well known computational methodologies.
-This allows us to enforce physically known quantities, such as the
-balance laws.
-
-The TensorFlow system is not quite suited for this type of workflow -\/-
-the resulting simulations are extremely slow due to repeated calls to
-session.run and a very complicated graph structure for the polynomials.
-Currently, the system is being reimplemented in Julia using Flux and
-Zygote to seamlessly reincorporate into a fully-fledged new reservoir
-simulator. The pendulum has been reimplemented in Julia at .
-
-We are also demonstrating a new programming paradigm applied to
-scientific computing. The entire system has another level of complexity
-to it. An offline training phase searches for a new representation, i.e.
-for new equations with new unknown degrees of freedom, that are good to
-solve.
 
 Each implemented equation of state (three options in this work spanning
 different extents of \ch{H2O}) has a database of potential realizations.
@@ -1509,10 +1474,20 @@ of pain-staking trial-and-error labor performed with human "intuition"
 and experience. We did encode a little bit of human intuition into the
 model architectures and tricks for initializing the networks.
 
-We can also think about this work as offline preconditioning.
 
-In TOUGH, for one instance, all of the calculations are performed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propagation occur, especially because numerical differentiation is used.
-The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically non-dimensionalize the entire problem.
+
+We are also demonstrating a new programming paradigm applied to
+scientific computing.
+Approaching this from a building-block problem, we can craft models
+with baked in physical knowledge.
+The entire system has another level of complexity
+to it. An offline training phase searches for a new representation, i.e.
+for new equations with new unknown degrees of freedom, that are good to
+solve.
+This allows us to enforce physically known quantities, such as the
+balance laws.
+The ultimate goal for this work is to automate integration of data
+analysis into simulation.
 
 The larger simulation code links into the trained database to load the
 computer-written model into the computation graph for the simulation,
@@ -1526,21 +1501,37 @@ In a mature code, the name of the architecture loaded would be hidden
 from the end-user and would be a setting which the doman scientist and developer freezes
 after checking the training process.
 
+We foresee this end-to-end approach will allow the system to develop
+\emph{better} simulations \emph{faster}.
+We demonstrated a specially crafted architecture whose parameters can be
+human interpretted and perform unsupervised phase/equilibria
+classification.
+
+
+We can also think about this work as offline preconditioning.
+In TOUGH, for one instance, all of the calculations are performed in SI units because it is simply too much labor to normalize everything! Adverse effects to iterative algorithms and floating point error propagation occur, especially because numerical differentiation is used.
+The learned primary variables are normalized to a unit range around zero, and the scaling matrix is explicitly in one step. The scaling matrix could be a way to systematically non-dimensionalize the entire problem.
+
 Techniques such as L1 regularization would be needed to search for low
 cost models that also satisfy our desire for Occam's razor
 simplifications. (The IAPWS relations used a preliminary form of this
-type of simplification, but are not optimal in the author's opinion.)
-
+type of simplification.)
 A fully automated testing system can verify which realizations worked
 (relate this to an independent review board comparing the results the
 independently developed codes) and then select the fastest and most
 robust one.
 
-
 In future work, we would want to continue appending new \(q\)s in a
 systemic way to derive, e.g., an \(H_2O + NaCl\) equation of state with
 3 degrees of freedom, bootstraping from the pre-trained \(H_2O\)
 architecture with 2 degrees of freedom.
+
+The TensorFlow system is not quite suited for this type of workflow ---
+the resulting simulations are extremely slow due to repeated calls to
+session.run and a very complicated graph structure for the
+polynomials. To implement a fully-fledged reservoir simulator, new programming libraries are being explored, such as
+Julia with Flux and Zygote for machine learning, or the JAX library in Python.
+
 
 \section*{Acknowlegements}
 %\acks
