@@ -36,14 +36,21 @@ class LatentFlow(LatentSim):
         data = {'q':(q,self.dm_q),
                 'X':(self.X,self.dm_q)} # Do I need this?
         
-    def plot(self,q):
+    def plot(self,q, include_q=False):
         """Do a basic plot of the fields decoded by q.
         Assumes a line for now."""
         s = self.decode(q.reshape(-1,2))
+        ncol = 4 if not include_q else 6
+        fig,ax = plt.figure()
         for i,leg in enumerate(['T','P','rho','rho*h']):
-            plt.subplot(1,4,i+1)
+            plt.subplot(1,ncol,i+1)
             plt.plot(s[:,i], self.X)
             plt.xlabel(leg)
+        if include_q:
+            for i,leg in enumerate(['q0','q1']):
+                plt.subplot(1,ncol,i+4+1)
+                plt.plot(q[:,i],self.X)
+                plt.xlabel(leg)
     
     def set_uniform(self,T=None, p=None, rho=None, rho_h=None):
         q = np.zeros(2*self.X.shape[0])
@@ -104,7 +111,10 @@ class LatentFlow(LatentSim):
                 R,K = self.build_system(q,q0)
                 Dq = scipy.sparse.linalg.spsolve(K,R)
                 q[:] += Dq
-                print(np.linalg.norm(Dq))
+                norm = np.linalg.norm(Dq)
+                if norm < 1.0e-12:
+                    break
+            print("Converged in ",itr," steps.")
             q0[:] = q[:]
             qs.append(q.copy())
         return qs
