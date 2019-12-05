@@ -15,18 +15,8 @@ class LatentFlow(LatentSim):
         self.build_flux()
         # self.mesh = None
         
-    def make_line_mesh(self,Ny,L):
-        """Makes a new mesh of elements in a line."""
-        # The centers of the volumes
-        self.X = np.c_[np.zeros((Ny,)),np.linspace(0,L,Ny)]
-        # A graph of the volumes
-        self.H_vol = cf.Hypergraph()
-        for i in range(Ny):
-            self.H_vol.Push_Edge([i])
-        # A graph of the connections
-        self.H_face = cf.Hypergraph()
-        for i in range(Ny-1):
-            self.H_face.Push_Edge([i,i+1,i+Ny])
+    def _make_dofmaps(self):
+        Ny = self.X.shape[0]
         q = np.zeros(2*Ny)
         # Cornflakes Dofmaps describing how data is on the mesh
         self.dm_q = cf.Dofmap(2,0,2)
@@ -36,21 +26,87 @@ class LatentFlow(LatentSim):
         data = {'q':(q,self.dm_q),
                 'X':(self.X,self.dm_q)} # Do I need this?
         
-    def plot(self,q, include_q=False):
+    def _make_vol_graph(self):
+        """Cornflakes needs a graph of singletons to represent the volumes"""
+        self.H_vol = cf.Hypergraph()
+        for i in range(self.X.shape[0]):
+            self.H_vol.Push_Edge([i])
+        
+    def make_line_mesh(self,Ny,L):
+        """Makes a new mesh of elements in a line."""
+        # The centers of the volumes
+        self.X = np.c_[np.zeros((Ny,)),np.linspace(0,L,Ny)]
+        # A graph of the connections
+        self.H_face = cf.Hypergraph()
+        for i in range(Ny-1):
+            self.H_face.Push_Edge([i,i+1,i+Ny])
+        self._make_vol_graph()
+        self._make_dofmaps()
+        
+    def make_grid_mesh(self,Nx,Ny,W,H):
+        """Makes a new mesh of elements in a grid."""
+        self.X = cf.PP.init_grid(Nx,Ny,(0.5,0.5),(W-1.0,0),(0,H-1.0))
+        self.H_face = cf.Graphers.Build_Pair_Graph(self.X, 1.1*W/Nx)
+        self.H_face.Add_Edge_Vertex(self.X.shape[0])
+        self._make_vol_graph()
+        self._make_dofmaps()
+        
+
+    def plot(self,q, include_q=False, xlims=None):
         """Do a basic plot of the fields decoded by q.
         Assumes a line for now."""
-        s = self.decode(q.reshape(-1,2))
+        q = q.reshape(-1,2)
+        s = self.decode(q)
         ncol = 4 if not include_q else 6
-        fig,ax = plt.figure()
+        fig = plt.figure()
+        lines = []
         for i,leg in enumerate(['T','P','rho','rho*h']):
             plt.subplot(1,ncol,i+1)
-            plt.plot(s[:,i], self.X)
+            line = plt.plot(s[:,i], self.X[:,1],linewidth=5)[0]
+            lines.append(line)
             plt.xlabel(leg)
+            try:
+                plt.xlim(*xlims[i])
+            except TypeError as e:
+                pass
         if include_q:
             for i,leg in enumerate(['q0','q1']):
                 plt.subplot(1,ncol,i+4+1)
-                plt.plot(q[:,i],self.X)
+                line = plt.plot(q[:,i],self.X[:,1],linewidth=5)[0]
+                lines.append(line)
                 plt.xlabel(leg)
+                try:
+                    plt.xlim(*xlims[4+i])
+                except TypeError as e:
+                    pass
+        return fig,lines
+    
+    def make_animation(self, qs, include_q = False, xlims=None):
+        from matplotlib import animation
+        
+        if xlims == None:
+            xlims = []
+            templims = []
+            for i in (0,-1):
+                qlast = qs[-1].reshape(-1,2)
+                s = self.decode(qlast)
+                span = lambda x: (x.min() - 0.01*(x.max()-x.min()) - 0.01*x.min(),
+                                    x.max() + 0.01*(x.max()-x.min())+ 0.01*x.max() )
+                templims.append( [ span(x) for x in s.T ] + \
+                        [ span(x) for x in qlast.T])
+            for pairs in zip(*templims):
+                xlims.append(( min([a for a,_ in pairs]), max([b for _,b in pairs])) )
+        fig,lines = self.plot(qs[0],include_q,xlims)
+        def animate(tidx):
+            q = qs[tidx].reshape(-1,2)
+            s = self.decode(q)
+            for i,leg in enumerate(['T','P','rho','rho*h']):
+                lines[i].set_data(s[:,i], self.X[:,1])
+            if include_q:
+                for i,leg in enumerate(['q0','q1']):
+                    lines[4+i].set_data(q[:,i],self.X[:,1])
+        return animation.FuncAnimation(fig,animate, frames=len(qs))
+    
     
     def set_uniform(self,T=None, p=None, rho=None, rho_h=None):
         q = np.zeros(2*self.X.shape[0])
