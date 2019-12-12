@@ -39,6 +39,7 @@ class SaveAtEndHook(tf.train.SessionRunHook):
     def begin(self):
         self._saver = tf.train.Saver()
     def end(self, session):
+        print("Calling Saver")
         atu.write_trimmed_pb_graph(self.graph,session,
                               ["decode","encode"],
                               self.fname+"_frz.pb")
@@ -62,7 +63,7 @@ class DoStuffHook(tf.train.SessionRunHook):
 def train_autoencoder(name, dataname, outerdim, innerdim, 
                       hyper=default_hyper,
                       training_dir='',data_dir='',n_epoch=5000, image_freq=1500,
-                      UseNewt = True):
+                      UseNewt = False):
     hyperpath = string_identifier(hyper)
     training_dir = training_dir+"/training_"+name+"/"+hyperpath
     newt_freq = n_epoch
@@ -84,7 +85,11 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
         onum = tf.Variable(0,name="csv_output_num")
         ae = AutoencoderFactory(hyper,outerdim,innerdim,stream_mini, stream_all)
         if UseNewt: # Leave it out of the graph if so; it's heavy and expensive to compute
-            ae._make_hess_train_step(stream_all)
+            try:
+                ae._make_hess_train_step(stream_all)
+            except:
+                # Maybe it's not implemented
+                UseNewt = False
         ae.goal_test = ae.make_goal(stream_test)
         init = tf.global_variables_initializer()
         meta_graph_def = tf.train.export_meta_graph(filename=training_dir+"/final_graph.meta")
@@ -154,7 +159,10 @@ def train_autoencoder(name, dataname, outerdim, innerdim,
                 if UseNewt and i%(newt_freq)==newt_freq-1:
                     newtstep(sess)
                 else:
-                    ae.update_beta(sess)
+                    try:
+                        ae.update_beta(sess)
+                    except AttributeError:
+                        pass
                     sess.run(ae.train_step)
 #                     print("loop:",sess.run([ae.goal_all,ae.train_step]
 #                                        +list(ae._get_hess_vars())) )

@@ -1,6 +1,6 @@
 if __name__=="__main__":
     training_dir = "/Users/afq/Research/eoshub/networks/"
-    if True: #imac
+    if False: #imac
         data_dir = "/Users/afq/Dropbox/ML/primaryautoencoder/data_files/"
     else:
         data_dir = "/Users/afq/Documents/Dropbox/ML/primaryautoencoder/data_files/"
@@ -49,7 +49,7 @@ if __name__=="__main__":
                           data_dir = data_dir,
                           n_epoch = n_epoch,
                           image_freq = 250)
-    if True: # Toggle parallel
+    if False: # Toggle parallel
         p = multi.Pool(processes=4)
         p.map( job, sets_to_try )
     else:
