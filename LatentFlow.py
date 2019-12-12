@@ -32,6 +32,15 @@ class LatentFlow(LatentSim):
         for i in range(self.X.shape[0]):
             self.H_vol.Push_Edge([i])
         
+    def _connect_from_cloud(self, X, R = 1.1):
+        """Takes a cloud of points and builds the connections, assuming 
+        regular spacing."""
+        self.X = X
+        self.H_face = cf.Graphers.Build_Pair_Graph(self.X, R)
+        self.H_face.Add_Edge_Vertex(self.X.shape[0])
+        self._make_vol_graph()
+        self._make_dofmaps()
+        
     def make_line_mesh(self,Ny,L):
         """Makes a new mesh of elements in a line."""
         # The centers of the volumes
@@ -45,13 +54,9 @@ class LatentFlow(LatentSim):
         
     def make_grid_mesh(self,Nx,Ny,W,H):
         """Makes a new mesh of elements in a grid."""
-        self.X = cf.PP.init_grid(Nx,Ny,(0.5,0.5),(W-1.0,0),(0,H-1.0))
-        self.H_face = cf.Graphers.Build_Pair_Graph(self.X, 1.1*W/Nx)
-        self.H_face.Add_Edge_Vertex(self.X.shape[0])
-        self._make_vol_graph()
-        self._make_dofmaps()
+        X = cf.PP.init_grid(Nx,Ny,(0.5,0.5),(W-1.0,0),(0,H-1.0))
+        self._connect_from_cloud(X, 1.1*W/Nx)
         
-
     def plot(self,q, include_q=False, xlims=None):
         """Do a basic plot of the fields decoded by q.
         Assumes a line for now."""
@@ -115,7 +120,7 @@ class LatentFlow(LatentSim):
             q[self.dm_q.Get_List(e)] = q0
         return q
     
-    def build_system(self,q,q0):
+    def build_system(self,q,q0, R_load=None):
         """Build the matrix system of equations for the next Newton step."""
         DT = self._sess.run(self._vars['Dt'])
         R0_vol_arr = self._sess.run([self.rhs], feed_dict ={self.i_q:q0.reshape(-1,2)})
@@ -154,24 +159,30 @@ class LatentFlow(LatentSim):
                                     ndof=self.X.shape[0]*2)
         # Make the runge kutta system
         RR = vol_R0 - vol_R + DT*flux_R
+        if not R_load is None:
+            RR += R_load
         KK = vol_K - DT*flux_K
         return RR,KK
     
-    def integrate_in_time(self, q0, N_steps):
+    def integrate_in_time(self, q0, N_steps, R_load=None, alpha=1.0):
         """Integrate for a number of time steps"""
         qs = []
         q0 = q0.copy()
         q = q0.copy()
         for t in range(N_steps):
-            for itr in range(10):
-                R,K = self.build_system(q,q0)
+            for itr in range(20):
+                R,K = self.build_system(q,q0, R_load)
                 Dq = scipy.sparse.linalg.spsolve(K,R)
-                q[:] += Dq
+                q[:] += alpha*Dq
                 norm = np.linalg.norm(Dq)
                 if norm < 1.0e-12:
                     break
+                if not np.isfinite(norm):
+                    return qs
             print("Converged in ",itr," steps.")
             q0[:] = q[:]
             qs.append(q.copy())
+            if itr==19:
+                break
         return qs
     

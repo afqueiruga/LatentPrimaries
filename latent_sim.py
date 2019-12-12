@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import afqstensorutils as atu
 
-LOAD_PROTOBUF = True
+LOAD_PROTOBUF = False
 
 def unshift(x, scale):
     return (scale[2,:]-scale[1,:])*x + scale[0,:]
